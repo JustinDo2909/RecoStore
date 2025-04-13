@@ -24,10 +24,8 @@ app.use("/auth", userRouter);
 app.use("/order", OrderRouter);
 app.use("/cart", CartRouter);
 mongoose
-  .connect(process.env.URLMONGODB, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(`mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASSWORD}@exe2fashion.gclrrba.mongodb.net/`)
+
   .then(() => {
     console.log("Connected to DB");
     app.listen(process.env.PORT, () => {

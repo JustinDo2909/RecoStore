@@ -9,8 +9,8 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please add username"],
       unique: true,
       trim: true,
-      minlenght: 3,
-      maxlenght: 30,
+      minlength: 3, // Sửa minlenght -> minlength
+      maxlength: 30, // Sửa maxlenght -> maxlength
       index: true,
     },
     email: {
@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please provide email"],
       unique: true,
       lowercase: true,
-      validate: [validator.isEmail, "Please Provide a vaild Email"],
+      validate: [validator.isEmail, "Please provide a valid email"],
     },
     role: {
       type: String,
@@ -28,21 +28,14 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Please provide password"],
-      minlenght: 8,
-      select: true,
+      minlength: 8,
+      // select: false, // Cẩn thận khi chọn select: true cho password
     },
     passwordConfirm: {
       type: String,
-      required: function () {
-        return this.isNew;
-      },
-      validate: {
-        validator: function (el) {
-          return el === this.password;
-        },
-        message: "Passwords do not match",
-      },
-      select: false,
+      required: [true, "Please confirm your password"],
+
+      select: false, // Ẩn passwordConfirm khỏi kết quả truy vấn
     },
     loginLocations: [
       {
@@ -51,14 +44,13 @@ const userSchema = new mongoose.Schema(
         _id: false,
       },
     ],
-   
   },
   { timestamps: true }
 );
 
 userSchema.pre("save", async function name(next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcrypt.hash(this.password, 10);
   this.passwordConfirm = undefined;
   next();
 });
