@@ -4,35 +4,78 @@ const { signToken } = require("../middleware/authMiddleware");
 
 const login = async (req) => {
   try {
-    const user = req.user; // The user object would be set in middleware after authentication
+    console.log("req.user", req.user);
 
-    const token = signToken({ id: user._id, role: user.role });
-    return token;
+    const userRequest = req.user;
+
+    const token = signToken({ id: userRequest._id, role: userRequest.role });
+
+    const user = await getMe(userRequest._id);
+
+    console.log("userA", user);
+
+    return { token, user };
   } catch (error) {
     throw new Error(error.message || "Login failed");
   }
 };
 
 const register = async (req) => {
-  console.log("Đây service");
-
   const { email, password, username, role, passwordConfirm } = req.body;
-
-  console.log("req.body", req.body);
 
   const newUser = await User.create({
     username,
     email,
+    password,
     passwordConfirm,
-    password: password,
-    role: role || "customer", // gán mặc định nếu không có
+    phone: req.body.phone || "Không có số điện thoại",
+    address: req.body.address || "Không có địa chỉ",
+    date_of_birth: req.body.date_of_birth || null,
+    avatar: req.body.avatar || "default-avatar.png",
+    role: role || "customer",
+    loginLocations: [{ location: req.ip || "Unknown" }],
+    cart: [],
+    orders: [],
+    isActive: true,
+    defaultPaymentMethod: req.body.defaultPaymentMethod || "cash",
   });
 
   const token = signToken({ id: newUser._id, role: newUser.role });
   return token;
 };
 
+const getMe = (idUser) => {
+  const result = User.findById(idUser).select("-password");
+  console.log("result", result);
+
+  if (!result) {
+    return res.status(404).json({
+      message: "User not found",
+      success: false,
+    });
+  }
+  return result;
+};
+
+const udpateProfileUser = async (req, data) => {
+  const { email, username, phone, address, avatar } = data;
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    {
+      email,
+      username,
+      address,
+      phone,
+      avatar,
+    },
+    { new: true }
+  ).select("-password");
+  return user;
+};
+
 module.exports = {
   login,
   register,
+  getMe,
+  udpateProfileUser,
 };
