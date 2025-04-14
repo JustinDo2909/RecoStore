@@ -6,6 +6,8 @@ const CategoryRouter = require("./router/category.router");
 const OrderRouter = require("./router/order.router");
 const userRouter = require("./router/user.router");
 const CartRouter = require("./router/cart.router");
+const ServiceRouter = require("./router/service.router");
+const RequestRouter = require("./router/request.router");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 dotenv.config();
@@ -23,6 +25,8 @@ app.use("/category", CategoryRouter);
 app.use("/auth", userRouter);
 app.use("/order", OrderRouter);
 app.use("/cart", CartRouter);
+app.use("/service", ServiceRouter);
+app.use("/request", RequestRouter);
 mongoose
   .connect(process.env.URLMONGODB, {
     useNewUrlParser: true,
