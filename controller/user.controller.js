@@ -1,106 +1,39 @@
 const User = require("../models/user.model");
-const bcrypt = require("bcryptjs");
+ 
 const { signToken, getIp } = require("../middleware/authMiddleware");
 const { blacklist } = require("../middleware/authMiddleware");
 const { default: axios } = require("axios");
+const userSerivce = require("../services/user.Services");
 
 const userSignup = async (req, res) => {
   try {
-    const { email, password, passwordConfirm, username, role } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(404).json({
-        message: "Email already registerd",
-        success: false,
-      });
-    }
-    const newUser = await User.create({
-      username,
-      email,
-      password,
-      passwordConfirm,
-      role,
-    });
-    const token = await signToken({ id: newUser._id, role: newUser.role });
-    if (!token) {
-      return res.status(404).json({
-        message: "Get Token false",
-        success: false,
-      });
-    } else {
-      return res.status(201).json({
-        message: "Get Token ok",
-        data: token,
-        success: true,
-      });
-    }
+    const token = await userSerivce.register(req);
+    return res.status(200).json({ success: true, data: token });
   } catch (error) {
-    console.log(error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Something went wrong",
+    });
   }
 };
-
 
 const userLogin = async (req, res) => {
   try {
-    const { username, password, address } = req.body; 
-    console.log("Login Request:", username, password, address);
+    const result = await userSerivce.login(req);
 
-    if (!username || !password) {
-      return res.status(401).json({
-        message: "Something is missing, please check!",
-        success: false,
-      });
-    }
-
-    let user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({
-        message: "Incorrect email or password",
-        success: false,
-      });
-    }
-
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
-      return res.status(401).json({
-        message: "Incorrect email or password",
-        success: false,
-      });
-    }
-
-    // Thêm address vào loginLocations
-    if (address) {
-      user.loginLocations.push({ location: address });
-    }
-
-    await user.save();
-
-    const token = signToken({ id: user._id, role: user.role });
-
-    return res.json({
-      message: `Welcome back ${user.username}`,
-      success: true,
-      token,
-    });
+    return res.status(200).json({ message: "Login successful", data: { token: result } });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: "Server error",
-      success: false,
-    });
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 const userLogout = async (req, res) => {
   try {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
     if (!token) {
-      return res
-        .status(400)
-        .json({ message: "No token provided", success: false });
+      return res.status(400).json({ message: "No token provided", success: false });
     }
 
     blacklist.add(token);
@@ -125,7 +58,6 @@ const userGetMy = async (req, res) => {
         success: false,
       });
     }
-  
 
     const Finduser = await User.findById(req.user.id).select("-password");
     if (!Finduser) {
@@ -134,7 +66,7 @@ const userGetMy = async (req, res) => {
         success: false,
       });
     }
-   
+
     res.json({
       message: "User retrieved successfully",
       success: true,
@@ -194,7 +126,7 @@ const userUpdateProfileById = async (req, res) => {
         success: false,
       });
     }
-    const idUser = req.params.id
+    const idUser = req.params.id;
     const { email, username } = req.body;
     if (!email || !username) {
       return res.status(401).json({
@@ -289,9 +221,6 @@ const refreshToken = async (req, res) => {
   });
 };
 
-
-
-
 module.exports = {
   userSignup,
   userLogin,
@@ -301,5 +230,5 @@ module.exports = {
   getAllUser,
   deleteUserById,
   refreshToken,
-  userUpdateProfileById
+  userUpdateProfileById,
 };
