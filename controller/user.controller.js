@@ -21,7 +21,7 @@ const userLogin = async (req, res) => {
   try {
     const result = await userSerivce.login(req);
 
-    return res.status(200).json({ message: "Login successful", data: { token: result } });
+    return res.status(200).json({ message: "Login successful", data: { token: result } , success: true });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
