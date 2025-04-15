@@ -4,15 +4,11 @@ const { signToken } = require("../middleware/authMiddleware");
 
 const login = async (req) => {
   try {
-    console.log("req.user", req.user);
-
     const userRequest = req.user;
 
     const token = signToken({ id: userRequest._id, role: userRequest.role });
 
     const user = await getMe(userRequest._id);
-
-    console.log("userA", user);
 
     return { token, user };
   } catch (error) {
@@ -28,11 +24,12 @@ const register = async (req) => {
     email,
     password,
     passwordConfirm,
+    fullName: req.body.fullName || "Không có thông tin",
     phone: req.body.phone || "Không có số điện thoại",
     address: req.body.address || "Không có địa chỉ",
     date_of_birth: req.body.date_of_birth || null,
     avatar: req.body.avatar || "default-avatar.png",
-    role: role || "customer",
+    role: role || "user",
     loginLocations: [{ location: req.ip || "Unknown" }],
     cart: [],
     orders: [],
@@ -45,8 +42,7 @@ const register = async (req) => {
 };
 
 const getMe = (idUser) => {
-  const result = User.findById(idUser).select("-password");
-  console.log("result", result);
+  const result = User.findById(idUser).select("email username fullName phone address avatar date_of_birth ");
 
   if (!result) {
     return res.status(404).json({
@@ -58,18 +54,20 @@ const getMe = (idUser) => {
 };
 
 const udpateProfileUser = async (req, data) => {
-  const { email, username, phone, address, avatar } = data;
+  const { email, username, phone, address, avatar, date_of_birth, fullName } = data;
   const user = await User.findByIdAndUpdate(
     req.user.id,
     {
       email,
       username,
       address,
+      date_of_birth,
       phone,
       avatar,
+      fullName,
     },
     { new: true }
-  ).select("-password");
+  ).select("email username fullName phone address avatar date_of_birth "); // Chỉ lấy các trường này
   return user;
 };
 

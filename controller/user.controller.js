@@ -4,6 +4,8 @@ const { signToken, getIp } = require("../middleware/authMiddleware");
 const { blacklist } = require("../middleware/authMiddleware");
 const { default: axios } = require("axios");
 const userSerivce = require("../services/user.Services");
+const { cloudinary } = require("../utils/cloudinary");
+const { getDataUri } = require("../utils/datauri");
 
 const crypto = require("crypto");
 
@@ -25,11 +27,7 @@ const userLoginController = async (req, res) => {
   try {
     const result = await userSerivce.login(req);
 
-<<<<<<< HEAD
-    return res.status(200).json({ message: "Login successful", data: { token: result } , success: true });
-=======
     return res.status(200).json({ message: "Đăng nhập thành công", data: result });
->>>>>>> 08cdcb585ce7d0941e94f607f07887b408d3ea4f
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Lỗi phía server" });
@@ -68,11 +66,11 @@ const userGetMyController = async (req, res) => {
         success: false,
       });
     }
-    const data = await userSerivce.getMe(req.user.id);
+    const user = await userSerivce.getMe(req.user.id);
     res.json({
       message: "Đã có thông tin",
       success: true,
-      data,
+      data: { user },
     });
   } catch (error) {
     res.status(500).json({
@@ -81,20 +79,30 @@ const userGetMyController = async (req, res) => {
     });
   }
 };
+
 const userUpdateProfileControler = async (req, res) => {
   try {
     //  phân rar lấy thông tin từ body nè NÍ
     const data = { ...req.body };
+    const file = req.file;
+
+    if (file) {
+      const fileUri = getDataUri(file);
+      const cloudResponse = await cloudinary.uploader.upload(fileUri);
+      data.avatar = cloudResponse.secure_url;
+    }
+    console.log("Ảnh người dùng", data.avatar);
+
     const user = await userSerivce.udpateProfileUser(req, data);
     if (!user) {
       return res.status(401).json({
-        message: "User not found",
+        message: "Không tìm thấy người dùng",
         success: false,
       });
     }
     return res.status(200).json({
-      message: "Update success",
-      user,
+      message: "Cập nhật thành công",
+      data: { user },
       success: true,
     });
   } catch (error) {
@@ -334,6 +342,51 @@ const deleteUserById = async (req, res) => {
   }
 };
 
+const enableUserByIdController = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { message } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        message: "Thiếu ID người dùng",
+        success: false,
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Người dùng không tồn tại",
+        success: false,
+      });
+    }
+
+    //  Cái này gọi là xóa mềm nhéss
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        isActive: true,
+        deactivatedReason: message,
+        deactivatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    // Thông báo thành công
+    return res.status(200).json({
+      message: `Tài khoản của '${updatedUser.username}' đã được khôi phục.`,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Lỗi xóa người dùng:", error);
+    return res.status(500).json({
+      message: "Lỗi server nội bộ",
+      success: false,
+    });
+  }
+};
 const refreshToken = async (req, res) => {
   const authHeaer = req.headers["authorization"];
   const token = authHeaer && authHeaer.split(" ")[1];
@@ -366,4 +419,5 @@ module.exports = {
   deleteUserById,
   refreshToken,
   userUpdateProfileById,
+  enableUserByIdController,
 };

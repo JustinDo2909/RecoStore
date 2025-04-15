@@ -20,6 +20,13 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       validate: [validator.isEmail, "Please provide a valid email"],
     },
+
+    fullName: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+
     role: {
       type: String,
       required: [true, "Please provide role"],

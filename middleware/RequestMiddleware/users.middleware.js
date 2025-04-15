@@ -1,4 +1,4 @@
-const User = require("../models/user.model");
+const User = require("../../models/user.model");
 const bcrypt = require("bcryptjs");
 
 const validator = require("validator");
@@ -77,7 +77,11 @@ const registerValidator = async (req, res, next) => {
 };
 
 const updateValidator = async (req, res, next) => {
+  console.log("req", req);
+
   const { email, username, address, phone, avatar, date_of_birth } = req.body;
+
+  console.log("req.body", email);
 
   // Kiểm tra các trường bắt buộc
   if (!email || !username) {

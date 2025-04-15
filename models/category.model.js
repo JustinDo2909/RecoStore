@@ -3,8 +3,12 @@ const mongoose = require("mongoose");
 const categorySchema = new mongoose.Schema(
   {
     title: { type: String, require: true, unique: true },
-    decription: { type: String },
+    description: { type: String },
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

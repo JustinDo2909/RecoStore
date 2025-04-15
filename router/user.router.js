@@ -18,6 +18,7 @@ const {
   forgotPasswordController,
   resetPasswordController,
   changePasswordController,
+  enableUserByIdController,
 } = require("../controller/user.controller");
 const {
   registerValidator,
@@ -26,7 +27,9 @@ const {
   forgotPasswordValidator,
   resetPasswordValidator,
   passwordChangeValidator,
-} = require("../middleware/users.middleware");
+} = require("../middleware/RequestMiddleware/users.middleware");
+
+const { upload } = require("../middleware/multer");
 
 const router = express.Router();
 
@@ -36,7 +39,8 @@ router.post("/signup", registerValidator, userSignupController);
 
 router.post("/logout", userLogoutController);
 router.get("/me", authenticateToken, userGetMyController);
-router.put("/update", authenticateToken, updateValidator, userUpdateProfileControler);
+
+router.put("/update", authenticateToken, upload.single("avatar"), updateValidator, userUpdateProfileControler);
 
 //  thêm forgotPasswod, thêm changePassword
 router.post("/forgot-password", forgotPasswordValidator, forgotPasswordController);
@@ -47,6 +51,7 @@ router.post("/refreshToken", authenticateToken, refreshToken);
 
 router.put("/update/:id", authenticateToken, authorizeRole("admin"), userUpdateProfileById);
 router.get("/users", authenticateToken, authorizeRole("admin"), getAllUser);
-router.patch("/deleteUser/:id", authenticateToken, authorizeRole("admin"), deleteUserById);
-
+//  xóa đây ku
+router.patch("/disable/:id", authenticateToken, authorizeRole("admin"), deleteUserById);
+router.patch("/enable/:id", authenticateToken, authorizeRole("admin"), enableUserByIdController);
 module.exports = router;

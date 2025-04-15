@@ -51,13 +51,14 @@ const authorizeRole = (roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
-        message: "Access denied. You do not have permission!",
+        message: "Truy cập bị từ chối. Bạn không có quyền thực hiện hành động này!",
         success: false,
       });
     }
     next();
   };
 };
+
 const getIp = async () => {
   const ipResponse = await fetch("https://api.ipify.org/?format=json");
   const ipData = await ipResponse.json();
