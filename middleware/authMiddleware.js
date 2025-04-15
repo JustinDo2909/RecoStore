@@ -16,27 +16,25 @@ const authenticateToken = async (req, res, next) => {
     console.log(token);
     if (token === null) {
       return res.status(403).json({
-        message: "Dont have token",
+        message: "Không có token",
         success: false,
       });
     }
     if (blacklist.has(token)) {
       return res.status(403).json({
-        message: "Token was expired",
+        message: "Token đã hết hạn",
         success: false,
       });
     }
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        console.error("JWT Verification Error:", err);
         return res.status(403).json({
-          message: "Invalid or expired token",
+          message: "Token không hợp lệ hoặc đã hết hạn",
           success: false,
         });
       }
 
       req.user = decoded;
-      console.log(req.user, "middle");
 
       next();
     });
@@ -78,5 +76,5 @@ module.exports = {
   authenticateToken,
   authorizeRole,
   blacklist,
-  getIp
+  getIp,
 };
