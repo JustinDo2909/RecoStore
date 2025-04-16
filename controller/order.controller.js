@@ -47,7 +47,8 @@ const getAllOrder = async (req, res) => {
 
 const addOrder = async (req, res) => {
   const userId = req.user.id;
-  const { paymentMethod, statusPayment, statusOrder } = req.body;
+  const statusOrder = "Shipping";
+  const { paymentMethod, statusPayment } = req.body;
 
   try {
     const user = await User.findById(userId).select("-password");

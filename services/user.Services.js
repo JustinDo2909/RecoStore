@@ -42,7 +42,7 @@ const register = async (req) => {
 };
 
 const getMe = (idUser) => {
-  const result = User.findById(idUser).select("email username fullName phone address avatar date_of_birth ");
+  const result = User.findById(idUser).select("email username fullName phone address avatar date_of_birth role ");
 
   if (!result) {
     return res.status(404).json({
