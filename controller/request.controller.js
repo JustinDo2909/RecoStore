@@ -1,7 +1,6 @@
 const Order = require("../models/order.model");
 const Request = require("../models/request.model");
 const Service = require("../models/service.model");
-
 const createRefundRequest = async (req, res) => {
   try {
     const user = req.user.id;
@@ -80,7 +79,7 @@ const createServiceRequest = async (req, res) => {
 
 const getAllRequest = async (req, res) => {
   try {
-    const requests = await Request.find({})
+    const requests = await Request.find({}).populate("order").populate("service")
       .populate("user")
       .select("-password");
     if (!requests) {
@@ -175,15 +174,13 @@ const updateStatusRequest = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    console.log(id, status);
-    
+
     const request = await Request.findByIdAndUpdate(
       id,
       { status },
       { new: true }
-    );
-    console.log(request);
-    
+    ).populate("order");
+
     if (!request) {
       return res.status(404).json({
         message: "Request not found",
@@ -191,26 +188,33 @@ const updateStatusRequest = async (req, res) => {
       });
     }
 
-    const updateRefundStatus = (doc, type) => {
+    // Hàm cập nhật trạng thái đơn hàng hoặc dịch vụ
+    const updateRefundStatus = (doc, fieldName) => {
       if (status === "Approved") {
-        doc[type] = "Refund Approved";
+        doc[fieldName] = "Refund Approved";
       } else if (status === "Rejected") {
-        doc[type] = "Refund Rejected";
+        doc[fieldName] = "Refund Rejected";
       }
     };
 
-    if (request.type === "Service" && request.service) {
+    // Handle different request types (service or refund)
+    if (request.type === "service") {
       const service = await Service.findById(request.service);
       if (service) {
         updateRefundStatus(service, "statusService");
         await service.save();
       }
-    } else if (request.order) {
-      const order = await Order.findById(request.order);
-      if (order) {
-        updateRefundStatus(order, "statusOrder");
-        await order.save();
-      }
+    } else if (request.type === "refund" && request.order) {
+      // Vì đã populate nên không cần findById lại
+      updateRefundStatus(request.order, "statusOrder");
+      await request.order.save();
+      const io = req.app.get("io");
+      // Emit an event via WebSocket after updating the order status
+      io.emit("orderStatusUpdated", {
+        message: "Order status updated",
+        orderId: request.order._id,
+        status: request.order.statusOrder,
+      });
     }
 
     return res.status(200).json({
@@ -227,6 +231,9 @@ const updateStatusRequest = async (req, res) => {
     });
   }
 };
+
+
+
 
 
 module.exports = {

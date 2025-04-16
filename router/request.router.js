@@ -10,7 +10,9 @@ const {
   deleteRequest,
   getAllRequest,
   getRequest,
+  updateStatusRequest,
 } = require("../controller/request.controller");
+
 const router = express.Router();
 
 router.get("/", authenticateToken, getRequest);
@@ -33,7 +35,7 @@ router.put(
   "/updateStatus/:id",
   authenticateToken,
   authorizeRole("admin"),
-  updateRequest
+  updateStatusRequest
 );
 
 module.exports = router;

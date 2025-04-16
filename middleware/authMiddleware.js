@@ -13,7 +13,6 @@ const authenticateToken = async (req, res, next) => {
   try {
     const authHeaer = req.headers["authorization"];
     const token = authHeaer && authHeaer.split(" ")[1];
-    console.log(token);
     if (token === null) {
       return res.status(403).json({
         message: "Không có token",
