@@ -1,112 +1,184 @@
-const Category = require('../models/category.model')
+const Category = require("../models/category.model");
+const mongoose = require("mongoose");
 
+const getAllCategoryController = async (req, res) => {
+  try {
+    const Categorys = await Category.find({});
+    if (!Categorys) {
+      return res.status(404).json({
+        message: "Không thể lấy danh sách danh mục",
+        success: false,
+      });
+    }
+    return res.status(200).json({
+      message: "Danh sách danh mục",
+      data: Categorys,
+      success: true,
+    });
+  } catch (error) {
+    console.log("Lỗi khi lấy danh sách danh mục:", error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy danh sách danh mục",
+      success: false,
+    });
+  }
+};
 
- const getAllCategory = async (req, res) => {
-    try {
-      const Categorys = await Category.find({})
-      if(!Categorys){
-        return res.status(404).json({
-            message:'can not take all Category',
-            success: false
-        })
-      }  
-      return res.status(200).json({
-        message: "Category list",
-        data : Categorys,
-        success: true
-      })
-    } catch (error) {
-        console.log(error)
-    }
-}
- const getOneCategory = async (req, res) => {
-    try {
-      const id = req.params.id
-      console.log(id , "idd")
-      const Categorys = await Category.findById(id).populate("products")
-      if(!Categorys){
-        return res.status(404).json({
-            message:'can not take all Category',
-            success: false
-        })
-      }  
-      return res.status(200).json({
-        message: "Category list",
-        data : Categorys,
-        success: true
-      })
-    } catch (error) {
-        console.log(error)
-    }
-}
- const updateCategory = async (req, res) => {
-    try {
-      const id = req.params.id
-      const {title , decription , products} = req.body
-      const Cate = { title, decription, products };
+const getOneCategoryController = async (req, res) => {
+  try {
+    const id = req.params.id;
 
-      const Categorys = await Category.findByIdAndUpdate(id, {$set: Cate} , {new: true})
-      if(!Categorys){
-        return res.status(404).json({
-            message:'can not update Category',
-            success: false
-        })
-      }  
-      return res.status(200).json({
-        message: "Category",
-        data : Categorys,
-        success: true
-      })
-    } catch (error) {
-        console.log(error)
+    const category = await Category.findById(id).populate("products");
+    if (!category) {
+      return res.status(404).json({
+        message: "Không thể lấy danh mục này",
+        success: false,
+      });
     }
-}
- const deleteCategory = async (req, res) => {
-    try {
-      const id = req.params.id
 
-      const Categorys = await Category.findByIdAndDelete(id)
-      if(!Categorys){
-        return res.status(404).json({
-            message:'can not find this Category',
-            success: false
-        })
-      }  
-      return res.status(200).json({
-        message: "Category delete sucess",
-        data : Categorys,
-        success: true
-      })
-    } catch (error) {
-        console.log(error)
+    return res.status(200).json({
+      message: "Thông tin danh mục",
+      data: category,
+      success: true,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy danh mục",
+      success: false,
+    });
+  }
+};
+
+const updateCategoryController = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    console.log("idCate", id);
+
+    const { title, description, products } = req.body;
+    const Cate = { title, description, products };
+
+    console.log("care", Cate);
+
+    const Categorys = await Category.findByIdAndUpdate(id, { $set: Cate }, { new: true });
+    if (!Categorys) {
+      return res.status(404).json({
+        message: "Không thể cập nhật danh mục",
+        success: false,
+      });
     }
-}
- const createCategory = async (req, res) => {
-    try {
-      const {title , decription , products} = req.body
-      const Cate = { title, decription, products };
-      console.log (req.body)
-      const Categorys = await Category.create(Cate)
-      if(!Categorys){
+    return res.status(200).json({
+      message: "Cập nhật danh mục thành công",
+      data: Categorys,
+      success: true,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi trong quá trình cập nhật danh mục",
+      success: false,
+    });
+  }
+};
+
+const deleteCategoryController = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const category = await Category.findByIdAndUpdate(id, {
+      isActive: false,
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        message: "Không tìm thấy danh mục này",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Vô hiệu danh mục thành công",
+      success: true,
+    });
+  } catch (error) {
+    console.log("Lỗi khi xóa danh mục:", error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi trong quá trình xóa danh mục",
+      success: false,
+    });
+  }
+};
+
+const createCategoryController = async (req, res) => {
+  try {
+    const { title, description, products } = req.body;
+
+    // cjeck coi là có hợp lệ không
+    if (Array.isArray(products) && products.every((p) => mongoose.Types.ObjectId.isValid(p))) {
+      const Cate = { title, description, products };
+
+      console.log(Cate);
+
+      const Categorys = await Category.create(Cate);
+
+      if (!Categorys) {
         return res.status(404).json({
-            message:'can not add this Category',
-            success: false
-        })
-      }  
-      return res.status(200).json({
-        message: "Category add sucess",
-        data : Categorys,
-        success: true
-      })
-    } catch (error) {
-      if (error.code === 11000){
-        return res.status(400).json({
-          
-          message: ` 'The Category name "${error.keyValue.name} " is already taken`
-        })
+          message: "Không thể thêm danh mục này.",
+          success: false,
+        });
       }
-        console.log(error)
-    }
-}
 
-module.exports = {getAllCategory , createCategory , deleteCategory , updateCategory, getOneCategory}
+      return res.status(200).json({
+        message: "Thêm danh mục thành công!",
+        data: Categorys,
+        success: true,
+      });
+    } else {
+      return res.status(400).json({
+        message: "Danh sách sản phẩm không hợp lệ. Vui lòng đảm bảo tất cả giá trị là ObjectId hợp lệ.",
+        success: false,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Lỗi hệ thống. Vui lòng thử lại sau.",
+      success: false,
+    });
+  }
+};
+
+const enableCategoryController = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const category = await Category.findByIdAndUpdate(id, {
+      isActive: true,
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        message: "Không tìm thấy danh mục này",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Khôi phục danh mục thành công.",
+      success: true,
+    });
+  } catch (error) {
+    console.log("Lỗi khi xóa danh mục:", error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi trong quá trình xóa danh mục",
+      success: false,
+    });
+  }
+};
+
+module.exports = {
+  getAllCategoryController,
+  createCategoryController,
+  deleteCategoryController,
+  updateCategoryController,
+  getOneCategoryController,
+  enableCategoryController,
+};
