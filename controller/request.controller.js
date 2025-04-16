@@ -117,4 +117,29 @@ const updateRequest = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getAllRequest, deleteRequest, updateRequest , getRequest};
+const updateStatusRequest = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { status } = req.body;
+    const request = await Request.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    );
+    if (!request) {
+      return res.status(404).json({
+        message: "can not find this request",
+        success: false,
+      });
+    }
+    return res.status(200).json({
+      message: "request update",
+      data: request,
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+module.exports = { createRequest, getAllRequest, deleteRequest, updateRequest , getRequest , updateStatusRequest};

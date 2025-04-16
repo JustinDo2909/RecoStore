@@ -15,13 +15,18 @@ const orderSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   paymentMethod: {
     type: String,
-    enum: ["QR" , "Cashier", 'Stripe'],
+    enum: ["QR", "Cashier", "Stripe"],
     required: true,
   },
-  status: {
+  statusPayment: {
     type: String,
     enum: ["Pending", "Paid", "Failed"],
     default: "Pending",
+  },
+  statusOrder: {
+    type: String,
+    enum: [ "Shipping", "Done", "Refund", "Cancel"],
+    default: "Shipping",
   },
   createdAt: { type: Date, default: Date.now },
 });

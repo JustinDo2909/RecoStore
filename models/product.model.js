@@ -8,11 +8,12 @@ const productSchema = new mongoose.Schema(
     rating: { type: Number },
     location: { type: String },
     picture: { type: String, default: "" },
-    stock: { type: Number, default: 0 },  
+    stock: { type: Number, default: 0 },
     categorys: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
     editby: {
       type: String,
     },
+    
   },
   { timestamps: true }
 );

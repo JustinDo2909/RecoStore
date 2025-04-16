@@ -25,11 +25,7 @@ const userLoginController = async (req, res) => {
   try {
     const result = await userSerivce.login(req);
 
-<<<<<<< HEAD
-    return res.status(200).json({ message: "Login successful", data: { token: result } , success: true });
-=======
     return res.status(200).json({ message: "Đăng nhập thành công", data: result });
->>>>>>> 08cdcb585ce7d0941e94f607f07887b408d3ea4f
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Lỗi phía server" });
