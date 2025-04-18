@@ -48,7 +48,7 @@ const getAllOrder = async (req, res) => {
 const addOrder = async (req, res) => {
   const userId = req.user.id;
   const statusOrder = "Shipping";
-  const { paymentMethod, statusPayment } = req.body;
+  const { paymentMethod, statusPayment, feeShipping } = req.body;
 
   try {
     const user = await User.findById(userId).select("-password");
@@ -82,7 +82,7 @@ const addOrder = async (req, res) => {
           .json({ message: "Sản phẩm không hợp lệ", success: false });
       }
 
-      totalPrice += item.productId.price * item.quantity;
+      totalPrice += item.productId.price * item.quantity + feeShipping;
       items.push({ productId: item.productId._id, quantity: item.quantity });
     }
 
@@ -96,6 +96,7 @@ const addOrder = async (req, res) => {
       paymentMethod,
       statusPayment,
       statusOrder,
+      feeShipping
     });
 
     await order.save();
