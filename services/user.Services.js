@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model"); // Adjust the path to your user model
 const { signToken } = require("../middleware/authMiddleware");
+const Wallet = require("../models/wallet.model");
 
 const login = async (req) => {
   try {
@@ -9,7 +10,7 @@ const login = async (req) => {
     const token = signToken({ id: userRequest._id, role: userRequest.role });
 
     const user = await getMe(userRequest._id);
-
+    await Wallet.create({ userId: userRequest._id, amount: 0 });
     return { token, user };
   } catch (error) {
     throw new Error(error.message || "Login failed");
@@ -42,7 +43,9 @@ const register = async (req) => {
 };
 
 const getMe = (idUser) => {
-  const result = User.findById(idUser).select("email username fullName phone address avatar date_of_birth role ");
+  const result = User.findById(idUser).select(
+    "email username fullName phone address avatar date_of_birth role "
+  );
 
   if (!result) {
     return res.status(404).json({
@@ -54,7 +57,8 @@ const getMe = (idUser) => {
 };
 
 const udpateProfileUser = async (req, data) => {
-  const { email, username, phone, address, avatar, date_of_birth, fullName } = data;
+  const { email, username, phone, address, avatar, date_of_birth, fullName } =
+    data;
   const user = await User.findByIdAndUpdate(
     req.user.id,
     {

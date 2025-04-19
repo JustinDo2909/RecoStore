@@ -10,6 +10,7 @@ const userRouter = require("./router/user.router");
 const CartRouter = require("./router/cart.router");
 const ServiceRouter = require("./router/service.router");
 const RequestRouter = require("./router/request.router");
+const WalletRouter = require("./router/wallet.router");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 dotenv.config();
@@ -38,6 +39,7 @@ app.use("/order", OrderRouter);
 app.use("/cart", CartRouter);
 app.use("/service", ServiceRouter);
 app.use("/request", RequestRouter);
+app.use("/wallet", WalletRouter);
 
 mongoose
   .connect(

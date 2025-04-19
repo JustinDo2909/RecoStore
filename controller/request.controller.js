@@ -1,6 +1,7 @@
 const Order = require("../models/order.model");
 const Request = require("../models/request.model");
 const Service = require("../models/service.model");
+const Wallet = require("../models/wallet.model");
 const createRefundRequest = async (req, res) => {
   try {
     const user = req.user.id;
@@ -79,7 +80,9 @@ const createServiceRequest = async (req, res) => {
 
 const getAllRequest = async (req, res) => {
   try {
-    const requests = await Request.find({}).populate("order").populate("service")
+    const requests = await Request.find({})
+      .populate("order")
+      .populate("service")
       .populate("user")
       .select("-password");
     if (!requests) {
@@ -101,7 +104,7 @@ const getAllRequest = async (req, res) => {
 const getRequest = async (req, res) => {
   try {
     const user = req.user.id;
-    const request = await Request.find({ user: user }).select("-user");
+    const request = await Request.find({ user: user });
     if (!request) {
       return res.status(404).json({
         message: "can not find this request",
@@ -172,6 +175,7 @@ const updateRequest = async (req, res) => {
 
 const updateStatusRequest = async (req, res) => {
   try {
+    const io = req.app.get("io");
     const { id } = req.params;
     const { status } = req.body;
 
@@ -179,7 +183,10 @@ const updateStatusRequest = async (req, res) => {
       id,
       { status },
       { new: true }
-    ).populate("order");
+    )
+      .populate("order")
+      .populate("service")
+      .populate("user");
 
     if (!request) {
       return res.status(404).json({
@@ -187,8 +194,8 @@ const updateStatusRequest = async (req, res) => {
         success: false,
       });
     }
+    console.log(request);
 
-    // Hàm cập nhật trạng thái đơn hàng hoặc dịch vụ
     const updateRefundStatus = (doc, fieldName) => {
       if (status === "Approved") {
         doc[fieldName] = "Refund Approved";
@@ -197,7 +204,6 @@ const updateStatusRequest = async (req, res) => {
       }
     };
 
-    // Handle different request types (service or refund)
     if (request.type === "service") {
       const service = await Service.findById(request.service);
       if (service) {
@@ -205,10 +211,27 @@ const updateStatusRequest = async (req, res) => {
         await service.save();
       }
     } else if (request.type === "refund" && request.order) {
-      // Vì đã populate nên không cần findById lại
       updateRefundStatus(request.order, "statusOrder");
       await request.order.save();
-      const io = req.app.get("io");
+      if (
+        request.order.statusOrder === "Refund Approved" &&
+        request.order.paymentMethod === "Stripe"
+      ) {
+        const refundAmount = Number(request.order.totalPrice) || 0;
+
+      const wallet =  await Wallet.findOneAndUpdate(
+          { userId: request.user._id },
+          { $inc: { amount: refundAmount } },
+          { new: true }
+        );
+        io.emit("refundToWallet", {
+          message: "The order has been refunded",
+          refundAmount: refundAmount, 
+        })
+      } else {
+        console.log("khong phai stripe");
+      }
+
       // Emit an event via WebSocket after updating the order status
       io.emit("orderStatusUpdated", {
         message: "Order status updated",
@@ -231,10 +254,6 @@ const updateStatusRequest = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 module.exports = {
   createServiceRequest,
