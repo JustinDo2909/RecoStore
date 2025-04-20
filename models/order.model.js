@@ -16,7 +16,7 @@ const orderSchema = new mongoose.Schema({
   feeShipping : { type: Number, required: true },
   paymentMethod: {
     type: String,
-    enum: ["QR", "Cashier", "Stripe"],
+    enum: ["QR", "Cash", "Stripe"],
     required: true,
   },
   statusPayment: {
