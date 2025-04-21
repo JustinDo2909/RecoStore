@@ -13,7 +13,9 @@ const productSchema = new mongoose.Schema(
     editby: {
       type: String,
     },
-    
+    isActive: { type: Boolean, default: true },
+    currentDiscount: { type: mongoose.Schema.Types.ObjectId, ref: "Discount" },
+    deactivationReason: { type: String, default: "" },
   },
   { timestamps: true }
 );
