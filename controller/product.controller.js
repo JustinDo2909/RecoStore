@@ -1,16 +1,18 @@
 const category = require("../models/category.model");
+const Discount = require("../models/discount.model");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
 const { createProductService, updateProductService } = require("../services/product.Services");
 const { cloudinary } = require("../utils/cloudinary");
 const { getDataUri } = require("../utils/datauri");
+const { calculateFinalPrice } = require("../utils/utils");
 
 const getAllProduct = async (req, res) => {
   try {
     const products = await Product.find({});
     if (!products) {
       return res.status(404).json({
-        message: "can not take all product",
+        message: "Không được danh sách sản",
         success: false,
       });
     }
@@ -23,6 +25,7 @@ const getAllProduct = async (req, res) => {
     console.log(error);
   }
 };
+
 const getProductById = async (req, res) => {
   const id = req.params.id;
   if (!id) {
@@ -182,6 +185,120 @@ const createProductController = async (req, res) => {
   }
 };
 
+const updateDiscountProductController = async (req, res) => {
+  const { productId, discountId } = req.body;
+
+  if (!productId || !discountId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin sản phẩm hoặc mã giảm giá",
+      success: false,
+    });
+  }
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm",
+        success: false,
+      });
+    }
+
+    const discount = await Discount.findById(discountId);
+    if (!discount || !discount.isActive) {
+      return res.status(404).json({
+        message: "Mã giảm giá không hợp lệ hoặc đã hết hạn",
+        success: false,
+      });
+    }
+
+    product.currentDiscount = discountId;
+
+    if (!discount.applicableProducts.includes(productId)) {
+      discount.applicableProducts.push(productId);
+      await discount.save();
+    }
+
+    const finalPrice = await calculateFinalPrice(product.price, discountId);
+    product.finalPrice = finalPrice;
+    await product.save();
+
+    return res.status(200).json({
+      message: "Cập nhật giảm giá thành công",
+      success: true,
+      data: {
+        productId: product._id,
+        finalPrice,
+        currentDiscount: discountId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi cập nhật giảm giá sản phẩm",
+      success: false,
+    });
+  }
+};
+
+const removeDiscountFromProductController = async (req, res) => {
+  const { productId, discountId } = req.body;
+
+  if (!productId || !discountId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin sản phẩm hoặc mã giảm giá",
+      success: false,
+    });
+  }
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm",
+        success: false,
+      });
+    }
+
+    if (product.currentDiscount && product.currentDiscount.toString() !== discountId) {
+      return res.status(400).json({
+        message: "Mã giảm giá không đúng với sản phẩm",
+        success: false,
+      });
+    }
+
+    const finalPrice = await calculateFinalPrice(product.price);
+    product.currentDiscount = null;
+    product.finalPrice = finalPrice;
+    await product.save();
+
+    const discount = await Discount.findById(discountId);
+    if (!discount) {
+      return res.status(404).json({
+        message: "Mã giảm giá không tồn tại",
+        success: false,
+      });
+    }
+
+    const productIndex = discount.applicableProducts.indexOf(productId);
+    if (productIndex !== -1) {
+      discount.applicableProducts.splice(productIndex, 1);
+      await discount.save();
+    }
+
+    return res.status(200).json({
+      message: "Đã bỏ mã giảm giá khỏi sản phẩm",
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi bỏ mã giảm giá khỏi sản phẩm",
+      success: false,
+    });
+  }
+};
+
 module.exports = {
   getAllProduct,
   createProductController,
@@ -189,4 +306,6 @@ module.exports = {
   updateProduct,
   reactivateProductController,
   getProductById,
+  updateDiscountProductController,
+  removeDiscountFromProductController,
 };

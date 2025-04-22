@@ -22,9 +22,13 @@ const discountSchema = new mongoose.Schema(
 
     code: { type: String, unique: true, sparse: true },
 
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: String },
+    editBy: { type: String },
+    reason: { type: String, default: null },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Discount", discountSchema);
+const Discount = mongoose.model("Discount", discountSchema);
+
+module.exports = Discount;

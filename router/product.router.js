@@ -9,6 +9,8 @@ const {
   deactivateProductController,
   reactivateProductController,
   getProductById,
+  updateDiscountProductController,
+  removeDiscountFromProductController,
 } = require("../controller/product.controller");
 const { authenticateToken, authorizeRole } = require("../middleware/authMiddleware");
 const { upload } = require("../middleware/multer");
@@ -38,8 +40,19 @@ router.put(
   updateProduct
 );
 
+// xóa
 router.patch("/deactivate/:id", authenticateToken, authorizeRole("admin"), deactivateProductController);
 
 router.patch("/reactivate/:id", authenticateToken, authorizeRole("admin"), reactivateProductController);
 
-module.exports = router; //
+// cập nhật mã khuyến mãi cho pỏduct
+router.patch("/discountProduct", authenticateToken, authorizeRole("admin"), updateDiscountProductController);
+
+router.patch(
+  "/removeDiscountFromProduct",
+  authenticateToken,
+  authorizeRole("admin"),
+  removeDiscountFromProductController
+);
+
+module.exports = router;

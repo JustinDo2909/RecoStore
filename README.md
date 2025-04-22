@@ -9,3 +9,5 @@ BE of Reco web, write by nodejs
 15/04 -> Chỉnh sửa và cập nhật thêm cho API catelogy, chỉnh sưar updateProfile
 
 21/04 -> Thêm schema discount , thêm trường dữ liẹu cho product, và cập nhật lại API product
+
+22/04 -> Thêm thuộc tính cho discountModuel, thêm trường dữ liẹu cho product, Thêm API product, cập nhật thêm cho API product

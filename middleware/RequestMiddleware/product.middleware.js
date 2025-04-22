@@ -21,7 +21,7 @@ const productValidator = [
 
   body("stock").optional().isInt({ min: 0 }).withMessage("Tồn kho phải là số nguyên không âm"),
 
-  body("categorys")
+  body("categories")
     .optional()
     .isArray()
     .withMessage("Categorys phải là mảng các ID")
