@@ -40,8 +40,8 @@ const createProductService = async (productData, file) => {
       discountId = discount._id;
     }
 
-    const finalPrice = calculateFinalPrice({ price, currentDiscount: discountId });
-
+    const finalPriceObj  =  await calculateFinalPrice({ price, currentDiscount: discountId });
+    const finalPrice = Number(finalPriceObj.price);
     const dataSave = {
       name,
       description,
