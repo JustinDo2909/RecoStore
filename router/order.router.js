@@ -5,16 +5,17 @@ const {
   addOrder,
   getOrder,
   updatStatusOrder,
-
+  getTopSellingProductsController,
 } = require("../controller/order.controller");
 
 const router = express.Router();
 
 router.get("/", authenticateToken, getOrder);
-router.get("/all", authenticateToken,authorizeRole('admin') ,  getAllOrder);
+router.get("/all", authenticateToken, authorizeRole("admin"), getAllOrder);
 router.post("/create", authenticateToken, addOrder);
 router.put("/updateStatus/:id", authenticateToken, updatStatusOrder);
 // router.put("/update/:id", authenticateToken, updateOrder);
 // router.delete("/delete/:id", authenticateToken, deleteOrderById);
 
+router.get("/topSelling", authenticateToken, authorizeRole("admin"), getTopSellingProductsController);
 module.exports = router;

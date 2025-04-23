@@ -11,3 +11,5 @@ BE of Reco web, write by nodejs
 21/04 -> Thêm schema discount , thêm trường dữ liẹu cho product, và cập nhật lại API product
 
 22/04 -> Thêm thuộc tính cho discountModuel, thêm trường dữ liẹu cho product, Thêm API product, cập nhật thêm cho API product
+
+23/04 -> Thêm API dashbroad, thêm API lấy sản bán chạy nhất, Thêm validate discount cho product

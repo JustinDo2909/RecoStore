@@ -10,17 +10,13 @@ const getOrder = async (req, res) => {
     const cartItems = await Order.find({ userId });
 
     if (!cartItems.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Không có order" });
+      return res.status(404).json({ success: false, message: "Không có order" });
     }
 
     return res.json({ success: true, data: cartItems, message: "Order" });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Lỗi server", error: error.message });
+    return res.status(500).json({ success: false, message: "Lỗi server", error: error.message });
   }
 };
 const getAllOrder = async (req, res) => {
@@ -31,17 +27,13 @@ const getAllOrder = async (req, res) => {
     const cartItems = await Order.find({});
 
     if (!cartItems.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Không có order" });
+      return res.status(404).json({ success: false, message: "Không có order" });
     }
 
     return res.json({ success: true, data: cartItems, message: "Order" });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Lỗi server", error: error.message });
+    return res.status(500).json({ success: false, message: "Lỗi server", error: error.message });
   }
 };
 
@@ -53,9 +45,7 @@ const addOrder = async (req, res) => {
   try {
     const user = await User.findById(userId).select("-password");
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User không tồn tại", success: false });
+      return res.status(404).json({ message: "User không tồn tại", success: false });
     }
 
     const cartItems = await Cart.find({ userId }).populate({
@@ -66,9 +56,7 @@ const addOrder = async (req, res) => {
     console.log("Cart Items:", cartItems);
 
     if (!cartItems.length) {
-      return res
-        .status(400)
-        .json({ message: "Giỏ hàng trống", success: false });
+      return res.status(400).json({ message: "Giỏ hàng trống", success: false });
     }
 
     let totalPrice = 0;
@@ -77,9 +65,7 @@ const addOrder = async (req, res) => {
     for (const item of cartItems) {
       if (!item.productId || typeof item.productId.price !== "number") {
         console.log("Lỗi sản phẩm:", item);
-        return res
-          .status(400)
-          .json({ message: "Sản phẩm không hợp lệ", success: false });
+        return res.status(400).json({ message: "Sản phẩm không hợp lệ", success: false });
       }
 
       totalPrice += item.productId.price * item.quantity + feeShipping;
@@ -96,7 +82,7 @@ const addOrder = async (req, res) => {
       paymentMethod,
       statusPayment,
       statusOrder,
-      feeShipping
+      feeShipping,
     });
 
     await order.save();
@@ -110,9 +96,7 @@ const addOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi server:", error);
-    return res
-      .status(500)
-      .json({ message: "Lỗi server", success: false, error: error.message });
+    return res.status(500).json({ message: "Lỗi server", success: false, error: error.message });
   }
 };
 const updatStatusOrder = async (req, res) => {
@@ -121,21 +105,66 @@ const updatStatusOrder = async (req, res) => {
     const { statusOrder } = req.body;
     const order = await Order.findById(id);
     if (!order) {
-      return res
-        .status(404)
-        .json({ message: "Order not found", success: false });
+      return res.status(404).json({ message: "Order not found", success: false });
     }
     order.statusOrder = statusOrder;
     await order.save();
-    return res
-      .status(200)
-      .json({ message: "Update status order successfully", success: true });
+    return res.status(200).json({ message: "Update status order successfully", success: true });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Server error", success: false, error: error.message });
+    return res.status(500).json({ message: "Server error", success: false, error: error.message });
   }
 };
 
-module.exports = { addOrder, getAllOrder, getOrder , updatStatusOrder};
+const getTopSellingProductsController = async (req, res) => {
+  try {
+    const topSellingProducts = await Order.aggregate([
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.productId",
+          totalSold: { $sum: "$items.quantity" },
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productInfo",
+        },
+      },
+      {
+        $unwind: "$productInfo",
+      },
+      {
+        $sort: { totalSold: -1 },
+      },
+
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          totalSold: 1,
+          productName: "$productInfo.name",
+          productPrice: "$productInfo.price",
+          productImage: "$productInfo.picture",
+          stock: "$productInfo.stock",
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: topSellingProducts,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy sản phẩm bán chạy nhất",
+    });
+  }
+};
+
+module.exports = { addOrder, getAllOrder, getOrder, updatStatusOrder, getTopSellingProductsController };

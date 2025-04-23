@@ -121,9 +121,9 @@ const updateDiscountForProductController = async (req, res) => {
 
   try {
     const product = await Product.findById(productId);
-    if (!product) {
+    if (!product || !product.isActive) {
       return res.status(404).json({
-        message: "Không tìm thấy sản phẩm",
+        message: "Sản phẩm không tồn tại hoặc đã bị vô hiệu hóa",
         success: false,
       });
     }

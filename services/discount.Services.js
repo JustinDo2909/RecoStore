@@ -1,5 +1,7 @@
 const Discount = require("../models/discount.model");
+const Product = require("../models/product.model");
 const User = require("../models/user.model");
+const { calculateFinalPrice } = require("../utils/utils");
 const getAllDiscount = (req) => {
   try {
     const list = Discount.find({});
@@ -35,7 +37,7 @@ const getDiscountById = async (id) => {
 };
 
 const createDiscount = async (req, res) => {
-  const { name, description, discountType, value, applicableProducts, startDate, endDate, code } = req.body;
+  const { name, description, discountType, value, applicableProducts = [], startDate, endDate, code } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
@@ -45,6 +47,23 @@ const createDiscount = async (req, res) => {
         success: false,
       });
     }
+
+    const invalidProducts = [];
+    for (const productId of applicableProducts) {
+      const product = await Product.findOne({ _id: productId, isActive: true });
+      if (!product) {
+        invalidProducts.push(productId);
+      }
+    }
+
+    if (invalidProducts.length > 0) {
+      return res.status(400).json({
+        message: "Một hoặc nhiều sản phẩm không hợp lệ hoặc đã bị vô hiệu hóa",
+        invalidProducts,
+        success: false,
+      });
+    }
+
     const newDiscount = new Discount({
       name,
       description,
@@ -58,6 +77,16 @@ const createDiscount = async (req, res) => {
     });
     await Discount.create(newDiscount);
 
+    for (const productId of applicableProducts) {
+      const product = await Product.findById(productId);
+      product.currentDiscount = savedDiscount._id;
+
+      const finalPrice = await calculateFinalPrice(product.price, savedDiscount);
+      product.finalPrice = finalPrice;
+
+      await product.save();
+    }
+
     return newDiscount;
   } catch (error) {
     throw new Error(error);
@@ -65,13 +94,29 @@ const createDiscount = async (req, res) => {
 };
 
 const updateDiscount = async (id, req, res) => {
-  const { name, description, discountType, value, applicableProducts, startDate, endDate, code } = req.body;
+  const { name, description, discountType, value, applicableProducts = [], startDate, endDate, code } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         message: "Người dùng không tìm thấy",
+        success: false,
+      });
+    }
+
+    const invalidProducts = [];
+    for (const productId of applicableProducts) {
+      const product = await Product.findOne({ _id: productId, isActive: true });
+      if (!product) {
+        invalidProducts.push(productId);
+      }
+    }
+
+    if (invalidProducts.length > 0) {
+      return res.status(400).json({
+        message: "Một hoặc nhiều sản phẩm không hợp lệ hoặc đã bị vô hiệu hóa",
+        invalidProducts,
         success: false,
       });
     }
@@ -97,6 +142,16 @@ const updateDiscount = async (id, req, res) => {
         message: "Giảm giá không tồn tại",
         success: false,
       });
+    }
+
+    for (const productId of applicableProducts) {
+      const product = await Product.findById(productId);
+      product.currentDiscount = savedDiscount._id;
+
+      const finalPrice = await calculateFinalPrice(product.price, savedDiscount);
+      product.finalPrice = finalPrice;
+
+      await product.save();
     }
 
     return updatedDiscount;
