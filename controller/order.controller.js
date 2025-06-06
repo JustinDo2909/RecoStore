@@ -1,5 +1,6 @@
 const Cart = require("../models/cart.model");
 const Order = require("../models/order.model");
+const Product = require("../models/product.model");
 const User = require("../models/user.model");
 
 const getOrder = async (req, res) => {
@@ -99,6 +100,85 @@ const addOrder = async (req, res) => {
     return res.status(500).json({ message: "Lỗi server", success: false, error: error.message });
   }
 };
+
+//
+const addOrderForOne = async (req, res) => {
+  const userId = req.user.id;
+  const statusOrder = "Shipping";
+  const { paymentMethod, statusPayment, feeShipping = 0, items } = req.body;
+
+  try {
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại", success: false });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Danh sách sản phẩm không được rỗng", success: false });
+    }
+
+    const normalizedItems = items.map((item) => {
+      if (typeof item === "string") return { productId: item, quantity: 1 };
+      return item;
+    });
+
+    const productIds = normalizedItems.map((item) => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    if (products.length !== productIds.length) {
+      return res.status(400).json({ message: "Có sản phẩm không tồn tại", success: false });
+    }
+
+    let totalPrice = 0;
+    const validItems = [];
+
+    for (const item of normalizedItems) {
+      const product = products.find((p) => p._id.toString() === item.productId);
+      if (!product) {
+        return res.status(400).json({ message: `Sản phẩm với id ${item.productId} không tồn tại`, success: false });
+      }
+
+      const quantity = Number(item.quantity);
+      if (!quantity || quantity <= 0) {
+        return res.status(400).json({ message: `Số lượng sản phẩm ${item.productId} không hợp lệ`, success: false });
+      }
+
+      const pricePerUnit = product.finalPrice || product.price || 0;
+      totalPrice += pricePerUnit * quantity;
+
+      validItems.push({ productId: product._id, quantity });
+    }
+
+    totalPrice += feeShipping;
+
+    const order = new Order({
+      userId,
+      items: validItems,
+      totalPrice,
+      paymentMethod,
+      statusPayment,
+      statusOrder,
+      feeShipping,
+      finalPriceOrder: totalPrice,
+    });
+
+    const savedOrder = await order.save();
+    console.log("Order đã lưu vào DB:", savedOrder);
+
+    // Xóa giỏ hàng người dùng sau khi đặt hàng
+    await Cart.deleteMany({ userId });
+
+    return res.status(200).json({
+      message: "Đặt hàng thành công",
+      data: order,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Lỗi server:", error);
+    return res.status(500).json({ message: "Lỗi server", success: false, error: error.message });
+  }
+};
+
 const updatStatusOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -167,4 +247,41 @@ const getTopSellingProductsController = async (req, res) => {
   }
 };
 
-module.exports = { addOrder, getAllOrder, getOrder, updatStatusOrder, getTopSellingProductsController };
+const getOrderById = async (req, res) => {
+  const orderId = req.params.orderId;
+
+  try {
+    const order = await Order.findOne({ _id: orderId })
+      .populate({
+        path: "items.productId",
+        select: "name finalPrice price image",
+      })
+      .populate({
+        path: "currentDiscount",
+        select: "code discountPercent",
+      });
+
+    if (!order) {
+      return res.status(404).json({ message: "Đơn hàng không tồn tại", success: false });
+    }
+
+    return res.status(200).json({
+      message: "Lấy đơn hàng thành công",
+      data: order,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy đơn hàng theo ID:", error);
+    return res.status(500).json({ message: "Lỗi server", success: false });
+  }
+};
+
+module.exports = {
+  addOrder,
+  getAllOrder,
+  getOrder,
+  updatStatusOrder,
+  getTopSellingProductsController,
+  getOrderById,
+  addOrderForOne,
+};

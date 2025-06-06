@@ -125,6 +125,12 @@ const userSchema = new mongoose.Schema(
       enum: ["cash", "credit_card", "paypal"],
       default: "cash",
     },
+
+    wallet: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
 
   { timestamps: true }

@@ -9,6 +9,10 @@ const categorySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    reason: {
+      type: String,
+      default: "", // hoặc bạn có thể bỏ default nếu muốn
+    },
   },
   { timestamps: true }
 );

@@ -83,10 +83,23 @@ const updateCategoryController = async (req, res) => {
 const deleteCategoryController = async (req, res) => {
   try {
     const id = req.params.id;
+    const { reason } = req.body;
 
-    const category = await Category.findByIdAndUpdate(id, {
-      isActive: false,
-    });
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({
+        message: "Nguyên nhân vô hiệu hóa không được để trống",
+        success: false,
+      });
+    }
+
+    const category = await Category.findByIdAndUpdate(
+      id,
+      {
+        isActive: false,
+        reason: reason || "",
+      },
+      { new: true }
+    );
 
     if (!category) {
       return res.status(404).json({
@@ -152,6 +165,7 @@ const enableCategoryController = async (req, res) => {
 
     const category = await Category.findByIdAndUpdate(id, {
       isActive: true,
+      reason: "",
     });
 
     if (!category) {

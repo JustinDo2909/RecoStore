@@ -15,6 +15,7 @@ const DisCountRouter = require("./router/discount.router");
 const DashBoard = require("./router/dashbroad.router");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const startDiscountOrderCronJob = require("./utils/discountOrderCron");
 dotenv.config();
 
 const app = express();
@@ -63,6 +64,8 @@ mongoose
     server.listen(process.env.PORT, () => {
       console.log(`App is running on port ${process.env.PORT}`);
     });
+
+    startDiscountOrderCronJob();
   })
   .catch((error) => {
     console.error("Connection failed:", error.message);

@@ -15,6 +15,8 @@ const discountSchema = new mongoose.Schema(
 
     applicableProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 
+    applicableOrders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
+
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
 
@@ -25,6 +27,12 @@ const discountSchema = new mongoose.Schema(
     createdBy: { type: String },
     editBy: { type: String },
     reason: { type: String, default: null },
+
+    targetType: {
+      type: String,
+      enum: ["product", "order"],
+      required: true,
+    },
   },
   { timestamps: true }
 );

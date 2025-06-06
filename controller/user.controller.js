@@ -368,7 +368,7 @@ const enableUserByIdController = async (req, res) => {
       userId,
       {
         isActive: true,
-        deactivatedReason: message,
+        deactivatedReason: "",
         deactivatedAt: new Date(),
       },
       { new: true }
@@ -387,6 +387,7 @@ const enableUserByIdController = async (req, res) => {
     });
   }
 };
+
 const refreshToken = async (req, res) => {
   const authHeaer = req.headers["authorization"];
   const token = authHeaer && authHeaer.split(" ")[1];

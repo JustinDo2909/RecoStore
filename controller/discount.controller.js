@@ -3,6 +3,7 @@ const discountService = require("../services/discount.Services");
 const Product = require("../models/product.model");
 const Discount = require("../models/discount.model");
 const { calculateFinalPrice } = require("../utils/utils");
+const Order = require("../models/order.model");
 
 const getDiscountController = async (req, res) => {
   try {
@@ -26,9 +27,9 @@ const getDiscountByIdController = async (req, res) => {
   }
 };
 
-const createDiscountController = async (req, res) => {
+const createProductDiscountController = async (req, res) => {
   try {
-    const result = await discountService.createDiscount(req);
+    const result = await discountService.createProductDiscount(req);
 
     return res.status(200).json({
       message: "Tạo mã giảm giá thành công",
@@ -43,11 +44,11 @@ const createDiscountController = async (req, res) => {
   }
 };
 
-const updateDiscountController = async (req, res) => {
+const updateDiscountInfoController = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { discountId } = req.params;
 
-    const result = await discountService.updateDiscount(id, req);
+    const result = await discountService.updateProductDiscount(discountId, req);
 
     return res.status(200).json({
       message: "Cập nhật mã giảm giá thành công",
@@ -62,6 +63,7 @@ const updateDiscountController = async (req, res) => {
   }
 };
 
+// Đình chỉ
 const deactivateDiscountController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,6 +111,7 @@ const activateDiscountController = async (req, res) => {
   }
 };
 
+// cập nhật mã
 const updateDiscountForProductController = async (req, res) => {
   const { productId, discountId } = req.body;
 
@@ -165,7 +168,8 @@ const updateDiscountForProductController = async (req, res) => {
 };
 
 const removeDiscountForProductController = async (req, res) => {
-  const { productId, discountId } = req.body;
+  const { productId } = req.params;
+  const { discountId } = req.body;
 
   if (!productId || !discountId) {
     return res.status(400).json({
@@ -227,13 +231,183 @@ const removeDiscountForProductController = async (req, res) => {
   }
 };
 
+// ---- order
+const createOrdersDiscountController = async (req, res) => {
+  try {
+    console.log("disOrder", req);
+
+    const result = await discountService.createOrderDiscount(req);
+
+    return res.status(200).json({
+      message: "Tạo mã giảm giá thành công cho đơn hàng",
+      data: result,
+      success: true,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      message: error.message || "Lỗi máy chủ",
+      invalidOrders: error.invalidOrders || [],
+      success: false,
+    });
+  }
+};
+
+// cập nhật thông tin của mã cho order
+const updateDiscountInforOrderController = async (req, res) => {
+  try {
+    const { discountId } = req.params;
+    const result = await discountService.updateOrderDiscount(discountId, req);
+    return res.status(200).json({
+      message: "Cập nhật mã giảm giá thành công",
+      data: result,
+      success: true,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      message: error.message || "Lỗi máy chủ",
+      invalidOrders: error.invalidOrders || [],
+      success: false,
+    });
+  }
+};
+
+// cập nhật mã cho order
+const updateDiscountForOrderController = async (req, res) => {
+  const { orderId, discountId } = req.body;
+
+  if (!orderId || !discountId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin đơn hàng hoặc mã giảm giá",
+      success: false,
+    });
+  }
+
+  try {
+    // Kiểm tra đơn hàng
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        message: "Đơn hàng không tồn tại",
+        success: false,
+      });
+    }
+
+    if (!order.isActive) {
+      return res.status(400).json({
+        message: "Đơn hàng đã bị hủy hoặc không còn hiệu lực",
+        success: false,
+      });
+    }
+
+    // Kiểm tra mã giảm giá
+    const discount = await Discount.findById(discountId);
+    if (!discount || !discount.isActive) {
+      return res.status(404).json({
+        message: "Mã giảm giá không hợp lệ hoặc đã hết hạn",
+        success: false,
+      });
+    }
+
+    order.currentDiscount = discountId;
+
+    const finalAmount = await calculateFinalPrice(order.finalPriceOrder, discount);
+    order.finalPriceOrder = finalAmount;
+
+    await order.save();
+
+    return res.status(200).json({
+      message: "Cập nhật mã giảm giá cho đơn hàng thành công",
+      success: true,
+      data: {
+        orderId: order._id,
+        finalAmount,
+        currentDiscount: discountId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi cập nhật mã giảm giá cho đơn hàng",
+      success: false,
+    });
+  }
+};
+
+const removeOrderForProductController = async (req, res) => {
+  const { OrderId } = req.params;
+  const { discountId } = req.body;
+  if (!OrderId || !discountId) {
+    return res.status(400).json({
+      message: "Thiếu thông tin đơn hàng hoặc mã giảm giá",
+      success: false,
+    });
+  }
+
+  try {
+    const order = await Order.findById(OrderId);
+    if (!order) {
+      return res.status(404).json({
+        message: "Không tìm thấy đơn hàng",
+        success: false,
+      });
+    }
+
+    if (order.currentDiscount && order.currentDiscount.toString() !== discountId) {
+      return res.status(400).json({
+        message: "Mã giảm giá không đúng với đơn hàng",
+        success: false,
+      });
+    }
+
+    order.currentDiscount = null;
+    const finalPrice = await calculateFinalPrice(order.totalPrice);
+    order.finalPrice = finalPrice;
+    await order.save();
+
+    const discount = await Discount.findById(discountId);
+    if (!discount) {
+      return res.status(404).json({
+        message: "Mã giảm giá không tồn tại",
+        success: false,
+      });
+    }
+
+    const OrderIndex = discount.applicableOrder.indexOf(OrderId);
+    if (OrderIndex !== -1) {
+      discount.applicableProducts.splice(OrderIndex, 1);
+      await discount.save();
+    }
+
+    return res.status(200).json({
+      message: "Đã bỏ mã giảm giá khỏi đơn hàng",
+      success: true,
+      data: {
+        orderId: order._id,
+        finalPrice,
+        currentDiscount: null,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi bỏ mã giảm giá khỏi đơn hàng",
+      success: false,
+    });
+  }
+};
+
 module.exports = {
   getDiscountController,
   getDiscountByIdController,
-  createDiscountController,
-  updateDiscountController,
+  createProductDiscountController,
+  updateDiscountInfoController,
   deactivateDiscountController,
   activateDiscountController,
   updateDiscountForProductController,
   removeDiscountForProductController,
+  createOrdersDiscountController,
+  updateDiscountInforOrderController,
+
+  updateDiscountForOrderController,
+  removeOrderForProductController,
 };

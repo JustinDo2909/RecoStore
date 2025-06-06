@@ -13,7 +13,7 @@ const orderSchema = new mongoose.Schema({
     },
   ],
   totalPrice: { type: Number, required: true },
-  feeShipping : { type: Number, required: true },
+  feeShipping: { type: Number, required: true },
   paymentMethod: {
     type: String,
     enum: ["QR", "Cash", "Stripe"],
@@ -29,7 +29,10 @@ const orderSchema = new mongoose.Schema({
     enum: ["Shipping", "Done", "Refund Approved", "Cancel", "Refund Requested", "Refund Rejected"],
     default: "Shipping",
   },
+  currentDiscount: { type: mongoose.Schema.Types.ObjectId, ref: "Discount" },
   createdAt: { type: Date, default: Date.now },
+  finalPriceOrder: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
 });
 
 const Order = mongoose.model("Order", orderSchema);
