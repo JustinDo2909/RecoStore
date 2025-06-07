@@ -13,6 +13,7 @@ const RequestRouter = require("./router/request.router");
 const WalletRouter = require("./router/wallet.router");
 const DisCountRouter = require("./router/discount.router");
 const DashBoard = require("./router/dashbroad.router");
+const CustomRouter = require("./router/custom.router");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const startDiscountOrderCronJob = require("./utils/discountOrderCron");
@@ -45,6 +46,7 @@ app.use("/request", RequestRouter);
 app.use("/wallet", WalletRouter);
 app.use("/discount", DisCountRouter);
 app.use("/admin", DashBoard);
+app.use("/custome", CustomRouter);
 mongoose
   .connect(`mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASSWORD}@exe2fashion.gclrrba.mongodb.net/`)
   .then(() => {

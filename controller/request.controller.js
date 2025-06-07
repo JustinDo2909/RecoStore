@@ -4,15 +4,11 @@ const Service = require("../models/service.model");
 const Wallet = require("../models/wallet.model");
 
 const Status = {
-  PENDING: "Pending",
+  PENDING: "pending",
   APPROVED: "Approved",
   REJECTED: "Rejected",
 };
 
-const Type = {
-  REFUND: "refund",
-  SERVICE: "service",
-};
 const createRefundRequest = async (req, res) => {
   try {
     const user = req.user.id;
@@ -225,7 +221,7 @@ const updateStatusRequest = async (req, res) => {
 
     if (!request) {
       return res.status(404).json({
-        message: "Không tìm thấy yêu cầu",
+        message: "Request not found",
         success: false,
       });
     }
@@ -233,22 +229,22 @@ const updateStatusRequest = async (req, res) => {
 
     const updateRefundStatus = (doc, fieldName) => {
       if (status === "Approved") {
-        doc[fieldName] = "Hoàn tiền đã được duyệt";
+        doc[fieldName] = "Refund Approved";
       } else if (status === "Rejected") {
-        doc[fieldName] = "Hoàn tiền bị từ chối";
+        doc[fieldName] = "Refund Rejected";
       }
     };
 
-    if (request.type === Type.SERVICE) {
+    if (request.type === "service") {
       const service = await Service.findById(request.service);
       if (service) {
         updateRefundStatus(service, "statusService");
         await service.save();
       }
-    } else if (request.type === Type.REFUND && request.order) {
+    } else if (request.type === "refund" && request.order) {
       updateRefundStatus(request.order, "statusOrder");
       await request.order.save();
-      if (request.order.statusOrder === "Hoàn tiền đã được duyệt" && request.order.paymentMethod === "Stripe") {
+      if (request.order.statusOrder === "Refund Approved" && request.order.paymentMethod === "Stripe") {
         const refundAmount = Number(request.order.totalPrice) || 0;
 
         const wallet = await Wallet.findOneAndUpdate(
@@ -257,30 +253,30 @@ const updateStatusRequest = async (req, res) => {
           { new: true }
         );
         io.emit("refundToWallet", {
-          message: "Đơn hàng đã được hoàn tiền",
+          message: "The order has been refunded",
           refundAmount: refundAmount,
         });
       } else {
-        console.log("Không phải thanh toán qua Stripe");
+        console.log("khong phai stripe");
       }
 
-      // Phát sự kiện WebSocket sau khi cập nhật trạng thái đơn hàng
+      // Emit an event via WebSocket after updating the order status
       io.emit("orderStatusUpdated", {
-        message: "Trạng thái đơn hàng đã được cập nhật",
+        message: "Order status updated",
         orderId: request.order._id,
         status: request.order.statusOrder,
       });
     }
 
     return res.status(200).json({
-      message: "Cập nhật yêu cầu thành công",
+      message: "Request updated successfully",
       data: request,
       success: true,
     });
   } catch (error) {
-    console.error("Lỗi cập nhật yêu cầu:", error);
+    console.error("Update Request Error:", error);
     return res.status(500).json({
-      message: "Lỗi máy chủ",
+      message: "Internal server error",
       error: error.message,
       success: false,
     });
@@ -296,3 +292,78 @@ module.exports = {
   getRequest,
   updateStatusRequest,
 };
+
+// const updateStatusRequest = async (req, res) => {
+//   try {
+//     const io = req.app.get("io");
+//     const { id } = req.params;
+//     const { status } = req.body;
+
+//     const request = await Request.findByIdAndUpdate(id, { status }, { new: true })
+//       .populate("order")
+//       .populate("service")
+//       .populate("user");
+
+//     if (!request) {
+//       return res.status(404).json({
+//         message: "Không tìm thấy yêu cầu",
+//         success: false,
+//       });
+//     }
+//     console.log(request);
+
+//     const updateRefundStatus = (doc, fieldName) => {
+//       if (status === "Approved") {
+//         doc[fieldName] = "Hoàn tiền đã được duyệt";
+//       } else if (status === "Rejected") {
+//         doc[fieldName] = "Hoàn tiền bị từ chối";
+//       }
+//     };
+
+//     if (request.type === Type.SERVICE) {
+//       const service = await Service.findById(request.service);
+//       if (service) {
+//         updateRefundStatus(service, "statusService");
+//         await service.save();
+//       }
+//     } else if (request.type === Type.REFUND && request.order) {
+//       updateRefundStatus(request.order, "statusOrder");
+//       await request.order.save();
+//       if (request.order.statusOrder === "Hoàn tiền đã được duyệt" && request.order.paymentMethod === "Stripe") {
+//         const refundAmount = Number(request.order.totalPrice) || 0;
+
+//         const wallet = await Wallet.findOneAndUpdate(
+//           { userId: request.user._id },
+//           { $inc: { amount: refundAmount } },
+//           { new: true }
+//         );
+//         io.emit("refundToWallet", {
+//           message: "Đơn hàng đã được hoàn tiền",
+//           refundAmount: refundAmount,
+//         });
+//       } else {
+//         console.log("Không phải thanh toán qua Stripe");
+//       }
+
+//       // Phát sự kiện WebSocket sau khi cập nhật trạng thái đơn hàng
+//       io.emit("orderStatusUpdated", {
+//         message: "Trạng thái đơn hàng đã được cập nhật",
+//         orderId: request.order._id,
+//         status: request.order.statusOrder,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       message: "Cập nhật yêu cầu thành công",
+//       data: request,
+//       success: true,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi cập nhật yêu cầu:", error);
+//     return res.status(500).json({
+//       message: "Lỗi máy chủ",
+//       error: error.message,
+//       success: false,
+//     });
+//   }
+// };
