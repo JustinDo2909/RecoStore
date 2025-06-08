@@ -33,18 +33,19 @@ const getUserWithWalletController = async (req, res) => {
 const payWithWalletController = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { items, totalPrice, feeShipping, currentDiscount } = req.body;
+    const { items, totalPrice, feeShipping, currentDiscount, address } = req.body;
 
-    // Tính tổng tiền thanh toán
-    // Bạn có thể tính finalPriceOrder = totalPrice + feeShipping - discount (nếu có)
-    // Ở đây giả sử không có discount để đơn giản
+    // Kiểm tra address
+    if (!address || address.trim() === "") {
+      return res.status(400).json({ message: "Địa chỉ không được để trống" });
+    }
+
     const finalPriceOrder = totalPrice + feeShipping;
 
     if (!finalPriceOrder || finalPriceOrder <= 0) {
       return res.status(400).json({ message: "Tổng số tiền thanh toán không hợp lệ" });
     }
 
-    // Tìm ví của user
     const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
       return res.status(404).json({ message: "Không tìm thấy ví của user" });
@@ -54,22 +55,21 @@ const payWithWalletController = async (req, res) => {
       return res.status(400).json({ message: "Số dư trong ví không đủ để thanh toán" });
     }
 
-    // Trừ tiền trong ví
     wallet.amount -= finalPriceOrder;
     await wallet.save();
 
-    // Tạo order mới
     const newOrder = new Order({
       userId,
       items,
       totalPrice,
       feeShipping,
-      paymentMethod: "Wallet", // thêm phương thức thanh toán mới "Wallet"
+      paymentMethod: "Wallet",
       statusPayment: "Paid",
       statusOrder: "Processing",
       currentDiscount: currentDiscount || null,
       finalPriceOrder,
       isActive: true,
+      address,
     });
 
     await newOrder.save();

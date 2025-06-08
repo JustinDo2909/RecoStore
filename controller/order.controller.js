@@ -336,7 +336,7 @@ const getOrderById = async (req, res) => {
       message: "Lấy đơn hàng thành công",
       data: {
         ...order.toObject(),
-        address: orderObject.address,
+        address: order.address,
         items: itemsWithDetails,
       },
       success: true,
