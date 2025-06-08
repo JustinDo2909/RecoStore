@@ -43,7 +43,7 @@ const createRefundRequest = async (req, res) => {
     }
 
     const orders = await Order.findById(order);
-    orders.statusOrder = "Refund requested";
+    orders.statusOrder = "Refund Requested";
     await orders.save();
 
     return res.status(200).json({
@@ -233,9 +233,9 @@ const updateStatusRequest = async (req, res) => {
 
     const updateRefundStatus = (doc, fieldName) => {
       if (status === "Approved") {
-        doc[fieldName] = "Hoàn tiền đã được duyệt";
+        doc[fieldName] = "Refund Approved";
       } else if (status === "Rejected") {
-        doc[fieldName] = "Hoàn tiền bị từ chối";
+        doc[fieldName] = "Refund Rejected";
       }
     };
 
@@ -248,7 +248,7 @@ const updateStatusRequest = async (req, res) => {
     } else if (request.type === Type.REFUND && request.order) {
       updateRefundStatus(request.order, "statusOrder");
       await request.order.save();
-      if (request.order.statusOrder === "Hoàn tiền đã được duyệt" && request.order.paymentMethod === "Stripe") {
+      if (request.order.statusOrder === "Refund Approved" && request.order.paymentMethod === "Stripe") {
         const refundAmount = Number(request.order.totalPrice) || 0;
 
         const wallet = await Wallet.findOneAndUpdate(

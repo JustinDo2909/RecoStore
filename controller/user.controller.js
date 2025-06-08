@@ -6,6 +6,7 @@ const { default: axios } = require("axios");
 const userSerivce = require("../services/user.Services");
 const { cloudinary } = require("../utils/cloudinary");
 const { getDataUri } = require("../utils/datauri");
+const nodemailer = require("nodemailer"); 
 
 const crypto = require("crypto");
 
@@ -91,7 +92,6 @@ const userUpdateProfileControler = async (req, res) => {
       const cloudResponse = await cloudinary.uploader.upload(fileUri);
       data.avatar = cloudResponse.secure_url;
     }
-    console.log("Ảnh người dùng", data.avatar);
 
     const user = await userSerivce.udpateProfileUser(req, data);
     if (!user) {
