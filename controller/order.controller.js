@@ -8,7 +8,7 @@ const getOrder = async (req, res) => {
     const userId = req.user.id;
     console.log(userId);
 
-    const cartItems = await Order.find({ userId });
+    const cartItems = await Order.find({ userId }).populate("items.productId");
 
     if (!cartItems.length) {
       return res.status(404).json({ success: false, message: "Không có order" });

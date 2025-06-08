@@ -38,6 +38,7 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   finalPriceOrder: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
+  address: { type: String, required: true },
 });
 
 const Order = mongoose.model("Order", orderSchema);
