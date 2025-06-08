@@ -20,6 +20,7 @@ const getOrder = async (req, res) => {
     return res.status(500).json({ success: false, message: "Lỗi server", error: error.message });
   }
 };
+
 const getAllOrder = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -282,9 +283,25 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: "Đơn hàng không tồn tại", success: false });
     }
 
+    const itemsWithTotalPrice = order.items.map((item) => {
+      const product = item.productId;
+      return {
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        finalPrice: product.finalPrice,
+        image: product.image,
+        quantity: item.quantity,
+        totalItemPrice: product.finalPrice * item.quantity,
+      };
+    });
+
     return res.status(200).json({
       message: "Lấy đơn hàng thành công",
-      data: order,
+      data: {
+        ...order.toObject(),
+        items: itemsWithTotalPrice,
+      },
       success: true,
     });
   } catch (error) {
