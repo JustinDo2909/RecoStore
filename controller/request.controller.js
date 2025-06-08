@@ -4,7 +4,7 @@ const Service = require("../models/service.model");
 const Wallet = require("../models/wallet.model");
 
 const Status = {
-  PENDING: "pending",
+  PENDING: "Pending",
   APPROVED: "Approved",
   REJECTED: "Rejected",
 };
