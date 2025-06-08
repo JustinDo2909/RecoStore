@@ -40,7 +40,7 @@ const getAllOrder = async (req, res) => {
 
 const addOrder = async (req, res) => {
   const userId = req.user.id;
-  const statusOrder = "Shipping";
+  const statusOrder = "Processing";
   const { paymentMethod, statusPayment, feeShipping } = req.body;
 
   try {
@@ -104,7 +104,7 @@ const addOrder = async (req, res) => {
 //
 const addOrderForOne = async (req, res) => {
   const userId = req.user.id;
-  const statusOrder = "Shipping";
+  const statusOrder = "Processing";
   const { paymentMethod, statusPayment, feeShipping = 0, items } = req.body;
 
   try {
