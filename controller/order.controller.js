@@ -6,15 +6,40 @@ const User = require("../models/user.model");
 const getOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log(userId);
 
-    const cartItems = await Order.find({ userId }).populate("items.productId");
+    const orders = await Order.find({ userId }).populate({
+      path: "items.productId",
+      select: "name price picture finalPrice",
+    });
 
-    if (!cartItems.length) {
+    if (!orders.length) {
       return res.status(404).json({ success: false, message: "Không có order" });
     }
 
-    return res.json({ success: true, data: cartItems, message: "Order" });
+    return res.json({
+      success: true,
+      message: "Danh sách đơn hàng",
+      data: orders.map((order) => ({
+        _id: order._id,
+        address: order.address,
+        statusOrder: order.statusOrder,
+        totalPrice: order.totalPrice,
+        finalPriceOrder: order.finalPriceOrder,
+        paymentMethod: order.paymentMethod,
+        statusPayment: order.statusPayment,
+        feeShipping: order.feeShipping,
+        createdAt: order.createdAt,
+        items: order.items.map((item) => ({
+          productId: item.productId._id,
+          name: item.productId.name,
+          price: item.productId.price,
+          finalPrice: item.productId.finalPrice,
+          picture: item.productId.picture,
+          quantity: item.quantity,
+          totalItemPrice: item.productId.finalPrice * item.quantity,
+        })),
+      })),
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: "Lỗi server", error: error.message });
@@ -42,7 +67,14 @@ const getAllOrder = async (req, res) => {
 const addOrder = async (req, res) => {
   const userId = req.user.id;
   const statusOrder = "Processing";
-  const { paymentMethod, statusPayment, feeShipping } = req.body;
+  const { paymentMethod, statusPayment, feeShipping, address } = req.body;
+
+  if (!address || address.trim() === "") {
+    return res.status(400).json({
+      message: "Địa chỉ không được để trống",
+      success: false,
+    });
+  }
 
   try {
     const user = await User.findById(userId).select("-password");
@@ -55,8 +87,6 @@ const addOrder = async (req, res) => {
       select: "price name",
     });
 
-    console.log("Cart Items:", cartItems);
-
     if (!cartItems.length) {
       return res.status(400).json({ message: "Giỏ hàng trống", success: false });
     }
@@ -66,16 +96,12 @@ const addOrder = async (req, res) => {
 
     for (const item of cartItems) {
       if (!item.productId || typeof item.productId.price !== "number") {
-        console.log("Lỗi sản phẩm:", item);
         return res.status(400).json({ message: "Sản phẩm không hợp lệ", success: false });
       }
 
       totalPrice += item.productId.price * item.quantity + feeShipping;
       items.push({ productId: item.productId._id, quantity: item.quantity });
     }
-
-    console.log("Items trước khi tạo đơn hàng:", items);
-    console.log("Tổng tiền:", totalPrice);
 
     const order = new Order({
       userId,
@@ -85,10 +111,10 @@ const addOrder = async (req, res) => {
       statusPayment,
       statusOrder,
       feeShipping,
+      address,
     });
 
     await order.save();
-
     await Cart.deleteMany({ userId });
 
     return res.status(200).json({
@@ -310,6 +336,7 @@ const getOrderById = async (req, res) => {
       message: "Lấy đơn hàng thành công",
       data: {
         ...order.toObject(),
+        address: orderObject.address,
         items: itemsWithDetails,
       },
       success: true,
