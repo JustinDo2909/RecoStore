@@ -6,7 +6,7 @@ const { default: axios } = require("axios");
 const userSerivce = require("../services/user.Services");
 const { cloudinary } = require("../utils/cloudinary");
 const { getDataUri } = require("../utils/datauri");
-
+const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
 require("dotenv").config();
