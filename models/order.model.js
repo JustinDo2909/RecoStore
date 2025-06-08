@@ -21,13 +21,18 @@ const orderSchema = new mongoose.Schema({
   },
   statusPayment: {
     type: String,
-    enum: ["Pending", "Paid", "Failed"],
-    default: "Pending",
+    enum: ["Paid", "Failed"],
+    default: "Paid",
   },
   statusOrder: {
     type: String,
-    enum: ["Shipping", "Done", "Refund Approved", "Cancel", "Refund Requested", "Refund Rejected"],
+    enum: ["Processing", "Shipping", "Done", "Refund Approved", "Cancel", "Refund Requested", "Refund Rejected"],
     default: "Shipping",
+  },
+
+  reason: {
+    type: String,
+    default: "",
   },
   currentDiscount: { type: mongoose.Schema.Types.ObjectId, ref: "Discount" },
   createdAt: { type: Date, default: Date.now },

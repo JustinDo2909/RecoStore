@@ -40,7 +40,7 @@ const getAllOrder = async (req, res) => {
 
 const addOrder = async (req, res) => {
   const userId = req.user.id;
-  const statusOrder = "Shipping";
+  const statusOrder = "Processing";
   const { paymentMethod, statusPayment, feeShipping } = req.body;
 
   try {
@@ -182,14 +182,31 @@ const addOrderForOne = async (req, res) => {
 const updatStatusOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { statusOrder } = req.body;
+    const { statusOrder, reason } = req.body;
+
+    if (statusOrder === "Cancel" && (!reason || reason.trim() === "")) {
+      return res.status(400).json({
+        message: "Phải cung cấp lý do khi hủy đơn hàng",
+        success: false,
+      });
+    }
+
     const order = await Order.findById(id);
     if (!order) {
-      return res.status(404).json({ message: "Order not found", success: false });
+      return res.status(404).json({ message: "Đơn hàng không tìm thấy", success: false });
     }
+
     order.statusOrder = statusOrder;
+
+    if (statusOrder === "Cancel") {
+      order.reason = reason;
+    } else {
+      order.reason = "";
+    }
+
     await order.save();
-    return res.status(200).json({ message: "Update status order successfully", success: true });
+
+    return res.status(200).json({ message: "Cập nhật thành công", success: true });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error", success: false, error: error.message });
