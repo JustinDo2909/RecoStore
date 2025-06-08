@@ -272,7 +272,11 @@ const getOrderById = async (req, res) => {
     const order = await Order.findOne({ _id: orderId })
       .populate({
         path: "items.productId",
-        select: "name finalPrice price image",
+        select: "name description price rating location picture stock categories currentDiscount finalPrice",
+        populate: {
+          path: "categories currentDiscount",
+          select: "name code discountPercent",
+        },
       })
       .populate({
         path: "currentDiscount",
@@ -283,14 +287,20 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: "Đơn hàng không tồn tại", success: false });
     }
 
-    const itemsWithTotalPrice = order.items.map((item) => {
+    const itemsWithDetails = order.items.map((item) => {
       const product = item.productId;
       return {
         productId: product._id,
         name: product.name,
+        description: product.description,
         price: product.price,
+        rating: product.rating,
+        location: product.location,
+        picture: product.picture,
+        stock: product.stock,
+        categories: product.categories,
+        currentDiscount: product.currentDiscount,
         finalPrice: product.finalPrice,
-        image: product.image,
         quantity: item.quantity,
         totalItemPrice: product.finalPrice * item.quantity,
       };
@@ -300,7 +310,7 @@ const getOrderById = async (req, res) => {
       message: "Lấy đơn hàng thành công",
       data: {
         ...order.toObject(),
-        items: itemsWithTotalPrice,
+        items: itemsWithDetails,
       },
       success: true,
     });
