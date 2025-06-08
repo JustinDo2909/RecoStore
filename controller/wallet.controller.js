@@ -33,10 +33,15 @@ const getUserWithWalletController = async (req, res) => {
 const payWithWalletController = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { amount } = req.body;
+    const { items, totalPrice, feeShipping, currentDiscount } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: "Số tiền thanh toán không hợp lệ" });
+    // Tính tổng tiền thanh toán
+    // Bạn có thể tính finalPriceOrder = totalPrice + feeShipping - discount (nếu có)
+    // Ở đây giả sử không có discount để đơn giản
+    const finalPriceOrder = totalPrice + feeShipping;
+
+    if (!finalPriceOrder || finalPriceOrder <= 0) {
+      return res.status(400).json({ message: "Tổng số tiền thanh toán không hợp lệ" });
     }
 
     // Tìm ví của user
@@ -45,21 +50,43 @@ const payWithWalletController = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy ví của user" });
     }
 
-    if (wallet.amount < amount) {
+    if (wallet.amount < finalPriceOrder) {
       return res.status(400).json({ message: "Số dư trong ví không đủ để thanh toán" });
     }
 
-    wallet.amount -= amount;
+    // Trừ tiền trong ví
+    wallet.amount -= finalPriceOrder;
     await wallet.save();
 
+    // Tạo order mới
+    const newOrder = new Order({
+      userId,
+      items,
+      totalPrice,
+      feeShipping,
+      paymentMethod: "Wallet", // thêm phương thức thanh toán mới "Wallet"
+      statusPayment: "Paid",
+      statusOrder: "Processing",
+      currentDiscount: currentDiscount || null,
+      finalPriceOrder,
+      isActive: true,
+    });
+
+    await newOrder.save();
+
     return res.status(200).json({
-      message: "Thanh toán thành công bằng ví",
-      data: wallet.amount,
+      message: "Thanh toán thành công bằng ví và tạo đơn hàng",
+      data: {
+        walletAmount: wallet.amount,
+        order: newOrder,
+      },
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Lỗi server khi thanh toán" });
   }
 };
+
+module.exports = payWithWalletController;
 
 module.exports = { getUserWithWalletController, payWithWalletController };

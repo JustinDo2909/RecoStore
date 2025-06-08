@@ -3,16 +3,18 @@ const mongoose = require("mongoose");
 
 const getAllCategoryController = async (req, res) => {
   try {
-    const Categorys = await Category.find({});
-    if (!Categorys) {
+    const categories = await Category.find({}).populate("products");
+
+    if (!categories || categories.length === 0) {
       return res.status(404).json({
         message: "Không thể lấy danh sách danh mục",
         success: false,
       });
     }
+
     return res.status(200).json({
       message: "Danh sách danh mục",
-      data: Categorys,
+      data: categories,
       success: true,
     });
   } catch (error) {
@@ -28,7 +30,13 @@ const getOneCategoryController = async (req, res) => {
   try {
     const id = req.params.id;
 
-    const category = await Category.findById(id).populate("products");
+    const category = await Category.findById(id).populate({
+      path: "products",
+      // Nếu bạn muốn populate thêm categories trong products (để tránh thiếu info), dùng tiếp populate nested:
+      populate: { path: "categories" },
+      // hoặc thêm các option khác nếu cần
+    });
+
     if (!category) {
       return res.status(404).json({
         message: "Không thể lấy danh mục này",
@@ -42,6 +50,7 @@ const getOneCategoryController = async (req, res) => {
       success: true,
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       message: "Đã xảy ra lỗi khi lấy danh mục",
       success: false,
