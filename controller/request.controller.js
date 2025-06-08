@@ -39,7 +39,7 @@ const createRefundRequest = async (req, res) => {
     }
 
     const orders = await Order.findById(order);
-    orders.statusOrder = "Refund requested";
+    orders.statusOrder = "Refund Requested";
     await orders.save();
 
     return res.status(200).json({
