@@ -127,6 +127,8 @@ const forgotPasswordController = async (req, res) => {
   // Lưu thông tin token vào database
   await user.save();
 
+  console.log("resetToken", resetToken);
+
   // Gửi email với token
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -157,8 +159,8 @@ const resetPasswordController = async (req, res) => {
 
   try {
     const user = await User.findOne({
-      passwordResetToken: resetToken,
-      passwordResetExpires: { $gt: Date.now() }, // check coi là có hết hạn á
+      forgot_password_token: resetToken,
+      forgot_password_expiry: { $gt: Date.now() }, // check coi là có hết hạn á
     });
 
     if (!user) {
@@ -171,8 +173,8 @@ const resetPasswordController = async (req, res) => {
     user.password = newPassword; // (Mã hóa mật khẩu trong schema 'pre-save' nếu cần)
 
     // Xóa token sau khi đã đổi mật khẩu
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
+    user.forgot_password_token = undefined;
+    user.forgot_password_expiry = undefined;
 
     await user.save();
 
