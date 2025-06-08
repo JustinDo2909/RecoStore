@@ -27,7 +27,7 @@ const orderSchema = new mongoose.Schema({
   statusOrder: {
     type: String,
     enum: ["Processing", "Shipping", "Done", "Refund Approved", "Cancel", "Refund Requested", "Refund Rejected"],
-    default: "Shipping",
+    default: "Processing",
   },
 
   reason: {
