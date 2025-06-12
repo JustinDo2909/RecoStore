@@ -95,12 +95,22 @@ const addOrder = async (req, res) => {
     const items = [];
 
     for (const item of cartItems) {
-      if (!item.productId || typeof item.productId.price !== "number") {
+      const product = item.productId;
+
+      if (!product || typeof product.price !== "number") {
         return res.status(400).json({ message: "Sản phẩm không hợp lệ", success: false });
       }
 
-      totalPrice += item.productId.price * item.quantity + feeShipping;
-      items.push({ productId: item.productId._id, quantity: item.quantity });
+      // Kiểm tra số lượng hàng còn lại
+      if (product.stock < item.quantity) {
+        return res.status(400).json({ message: `Sản phẩm ${product.name} không đủ hàng`, success: false });
+      }
+
+      product.stock -= item.quantity;
+      await product.save();
+
+      totalPrice += product.price * item.quantity + feeShipping;
+      items.push({ productId: product._id, quantity: item.quantity });
     }
 
     const order = new Order({
