@@ -5,7 +5,7 @@ const { upload } = require("../middleware/multer");
 
 const router = express.Router();
 
-router.get("/", authenticateToken, authorizeRole("admin"), getAllCustomController);
+router.get("/all", authenticateToken, authorizeRole("admin"), getAllCustomController);
 
 router.post("/create", authenticateToken, upload.single("customPicture"), createCustomController);
 

@@ -4,6 +4,7 @@ const Order = require("../models/order.model");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
 const { calculateFinalPrice } = require("../utils/utils");
+
 const getAllDiscount = (req) => {
   try {
     const list = Discount.find({});
