@@ -11,6 +11,6 @@ const router = express.Router();
 
 router.get("/", authenticateToken, getUserWithWalletController);
 
-router.get("/pay", authenticateToken, payWithWalletController);
+router.post("/pay", authenticateToken, payWithWalletController);
 
 module.exports = router;
