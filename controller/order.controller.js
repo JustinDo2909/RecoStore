@@ -82,9 +82,10 @@ const addOrder = async (req, res) => {
       return res.status(404).json({ message: "User không tồn tại", success: false });
     }
 
+    // ✅ Sửa ở đây: thêm stock vào select
     const cartItems = await Cart.find({ userId }).populate({
       path: "productId",
-      select: "price name",
+      select: "price name stock", // <- THÊM `stock` ở đây!
     });
 
     if (!cartItems.length) {
@@ -95,12 +96,33 @@ const addOrder = async (req, res) => {
     const items = [];
 
     for (const item of cartItems) {
-      if (!item.productId || typeof item.productId.price !== "number") {
+      const product = item.productId;
+
+      if (!product || typeof product.price !== "number") {
         return res.status(400).json({ message: "Sản phẩm không hợp lệ", success: false });
       }
 
-      totalPrice += item.productId.price * item.quantity + feeShipping;
-      items.push({ productId: item.productId._id, quantity: item.quantity });
+      const quantity = Number(item.quantity);
+      if (!quantity || isNaN(quantity)) {
+        return res.status(400).json({ message: `Số lượng không hợp lệ cho sản phẩm ${product.name}`, success: false });
+      }
+
+      // ✅ Kiểm tra thêm để tránh lỗi NaN
+      if (typeof product.stock !== "number" || isNaN(product.stock)) {
+        return res.status(400).json({ message: `Tồn kho không hợp lệ cho sản phẩm ${product.name}`, success: false });
+      }
+
+      // Kiểm tra tồn kho
+      if (product.stock < quantity) {
+        return res.status(400).json({ message: `Sản phẩm ${product.name} không đủ hàng`, success: false });
+      }
+
+      // Trừ tồn kho
+      product.stock = product.stock - quantity;
+      await product.save();
+
+      totalPrice += product.price * quantity + feeShipping;
+      items.push({ productId: product._id, quantity });
     }
 
     const order = new Order({

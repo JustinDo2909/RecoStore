@@ -37,6 +37,9 @@ const getUserWithWalletController = async (req, res) => {
 };
 
 const payWithWalletController = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const userId = req.user.id || req.user._id;
     const { items, totalPrice, feeShipping, currentDiscount, address } =
@@ -44,6 +47,8 @@ const payWithWalletController = async (req, res) => {
 
     // Kiểm tra address
     if (!address || address.trim() === "") {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: "Địa chỉ không được để trống" });
     }
     const user = await User.findById(userId).select(
@@ -57,27 +62,49 @@ const payWithWalletController = async (req, res) => {
     const finalPriceOrder = totalPrice + feeShipping;
 
     if (!finalPriceOrder || finalPriceOrder <= 0) {
-      return res
-        .status(400)
-        .json({ message: "Tổng số tiền thanh toán không hợp lệ" });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Tổng số tiền thanh toán không hợp lệ" });
     }
 
-     const wallet = await Wallet.findOne({ userId: user.id });
+    const wallet = await Wallet.findOne({ userId }).session(session);
     if (!wallet) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ message: "Không tìm thấy ví của user" });
     }
 
     if (wallet.amount < finalPriceOrder) {
-      console.log('ff',wallet.amount, finalPriceOrder )
-      
-      return res
-        .status(400)
-        .json({ message: "Số dư trong ví không đủ để thanh toán" });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Số dư trong ví không đủ để thanh toán" });
     }
 
-    wallet.amount -= finalPriceOrder;
-    await wallet.save();
+    // Trừ stock sản phẩm
+    for (const item of items) {
+      const product = await Product.findById(item.productId).session(session);
 
+      if (!product) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ message: `Không tìm thấy sản phẩm với ID: ${item.productId}` });
+      }
+
+      if (product.stock < item.quantity) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: `Sản phẩm "${product.name}" không đủ hàng tồn kho` });
+      }
+
+      product.stock -= item.quantity;
+      await product.save({ session });
+    }
+
+    // Trừ tiền ví
+    wallet.amount -= finalPriceOrder;
+    await wallet.save({ session });
+
+    // Tạo đơn hàng
     const newOrder = new Order({
       userId,
       items,
@@ -92,7 +119,11 @@ const payWithWalletController = async (req, res) => {
       address,
     });
 
-    await newOrder.save();
+    await newOrder.save({ session });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     return res.status(200).json({
       message: "Thanh toán thành công bằng ví và tạo đơn hàng",
@@ -102,8 +133,10 @@ const payWithWalletController = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Lỗi server khi thanh toán" });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Lỗi transaction:", error);
+    return res.status(500).json({ message: "Lỗi server khi thanh toán", error: error.message });
   }
 };
 

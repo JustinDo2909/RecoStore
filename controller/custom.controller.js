@@ -1,23 +1,27 @@
 const Custom = require("../models/custom.model");
 const User = require("../models/user.model");
+const { customeService } = require("../services/custome.Services");
 
 const getAllCustomController = async (req, res) => {
   try {
-    const customs = await Custom.find({});
-    if (!customs) {
+    const customs = await Custom.find({}).populate("user", "username email phone").populate("product", "name");
+
+    if (!customs || customs.length === 0) {
       return res.status(404).json({
         message: "Không tìm thấy danh sách custom",
         success: false,
       });
     }
+
     return res.status(200).json({
       message: "Danh sách custom",
       data: customs,
       success: true,
     });
   } catch (error) {
+    console.error("Lỗi khi lấy custom:", error);
     return res.status(500).json({
-      message: "Đã xảy ra lỗi trong quá trình lấy danh sách dịch vụ",
+      message: "Đã xảy ra lỗi trong quá trình lấy danh sách thiết kế",
       success: false,
     });
   }
@@ -42,22 +46,30 @@ const createCustomController = async (req, res) => {
       });
     }
 
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Thiếu ảnh thiết kế",
+        success: false,
+      });
+    }
+
     const customeData = {
       user: user._id,
-      ...req.body,
+      product: req.body.productId, // nếu gửi từ client
+      title: req.body.title, // nếu gửi từ client
     };
 
-    const custom = await customService(customeData, req.file);
+    const custom = await customeService(customeData, req.file);
 
     return res.status(200).json({
-      message: "Sản phẩm đã được thêm thành công",
+      message: "Thiết kế đã được gửi thành công",
       data: custom,
       success: true,
     });
   } catch (error) {
     console.error("Lỗi khi thêm sản phẩm:", error);
-    return res.status(400).json({
-      message: error.message || "Thêm sản phẩm thất bại",
+    return res.status(500).json({
+      message: error.message || "Thêm thiết kế thất bại",
       success: false,
     });
   }
