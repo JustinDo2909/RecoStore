@@ -55,7 +55,7 @@ const createProductService = async (productData, file) => {
       // finalPrice,
     };
 
-    const product = await Product.create(dataSave);
+    let product = await Product.create(dataSave);
 
     if (categories && categories.length > 0) {
       await Category.updateMany({ _id: { $in: categories } }, { $addToSet: { products: product._id } });
@@ -73,7 +73,7 @@ const createProductService = async (productData, file) => {
 
 const updateProductService = async (productId, productData, userId, file) => {
   try {
-    const userEdit = await User.findById(userId).select("-password");
+    let userEdit = await User.findById(userId).select("-password");
 
     console.log("userEdit", userEdit);
 
@@ -81,7 +81,7 @@ const updateProductService = async (productId, productData, userId, file) => {
       throw new Error("Không tìm thấy người dùng này");
     }
 
-    const { name, description, price, rating, location, stock, categories, profilePicture } = productData;
+    let { name, description, price, rating, location, stock, categories, profilePicture } = productData;
 
     let discountId = null;
 
@@ -124,7 +124,7 @@ const updateProductService = async (productId, productData, userId, file) => {
       price,
       rating,
       location,
-      profilePicture,
+      picture: profilePicture,
       stock,
       categories,
       // currentDiscount: discountId || null,
@@ -132,7 +132,7 @@ const updateProductService = async (productId, productData, userId, file) => {
       // finalPrice,
     };
 
-    const updatedProduct = await Product.findByIdAndUpdate(productId, { $set: dataSave }, { new: true });
+    let updatedProduct = await Product.findByIdAndUpdate(productId, { $set: dataSave }, { new: true });
     if (!updatedProduct) {
       throw new Error("Không thể cập nhật sản phẩm");
     }

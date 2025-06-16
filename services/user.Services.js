@@ -7,10 +7,36 @@ const login = async (req) => {
   try {
     const userRequest = req.user;
 
+    if (!userRequest.isActive) {
+      throw new Error("Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
+    }
+
     const token = signToken({ id: userRequest._id, role: userRequest.role });
+    const login = async (req) => {
+      try {
+        const userRequest = req.user;
+
+        if (!userRequest.isActive) {
+          throw new Error("Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ hỗ trợ.");
+        }
+
+        const token = signToken({ id: userRequest._id, role: userRequest.role });
+
+        const user = await getMe(userRequest._id);
+
+        await Wallet.create({ userId: userRequest._id, amount: 0 });
+
+        return { token, user };
+      } catch (error) {
+        throw new Error(error.message || "Login failed");
+      }
+    };
 
     const user = await getMe(userRequest._id);
+
+    // 4. Tạo ví nếu chưa có
     await Wallet.create({ userId: userRequest._id, amount: 0 });
+
     return { token, user };
   } catch (error) {
     throw new Error(error.message || "Login failed");
@@ -43,9 +69,7 @@ const register = async (req) => {
 };
 
 const getMe = (idUser) => {
-  const result = User.findById(idUser).select(
-    "email username fullName phone address avatar date_of_birth role "
-  );
+  const result = User.findById(idUser).select("email username fullName phone address avatar date_of_birth role ");
 
   if (!result) {
     return res.status(404).json({
@@ -57,8 +81,7 @@ const getMe = (idUser) => {
 };
 
 const udpateProfileUser = async (req, data) => {
-  const { email, username, phone, address, avatar, date_of_birth, fullName } =
-    data;
+  const { email, username, phone, address, avatar, date_of_birth, fullName } = data;
   const user = await User.findByIdAndUpdate(
     req.user.id,
     {
